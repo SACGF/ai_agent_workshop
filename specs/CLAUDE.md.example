@@ -1,7 +1,25 @@
 # CLAUDE.md
 
-Conventions for the `mytools` project. Copy this to the repo root before you start:
-`cp specs/CLAUDE.md.example CLAUDE.md`, then edit it as your design firms up.
+Conventions for the `mytools` project. This is copied to the repo root during setup
+and read automatically at the start of every session — edit it as your design firms up,
+either directly or with the `#` prefix from inside a session.
+
+## My fork — fill this in first
+
+**My fork is `<your-github-username>/ai_agent_workshop`.**
+
+Anything that **creates** — `gh issue create`, `gh pr create` — passes
+`--repo <your-github-username>/ai_agent_workshop`. Never write to
+`SACGF/ai_agent_workshop`: that's the shared upstream template and thirty other people
+are working from it.
+
+Reading and reviewing someone else's PR is fine when I name their fork explicitly
+(`gh pr diff`, `gh pr review --repo <partner>/ai_agent_workshop`). The rule is about
+where new things land, not about what you're allowed to look at.
+
+Pass the flag every time. `gh` with a missing or empty `--repo` does not fail — it
+silently resolves to the git remote and exits 0, so a forgotten flag looks exactly like
+a success.
 
 ## What this is
 
@@ -50,4 +68,4 @@ fails, look there first.
 - Small commits, one logical change each, message referencing the issue: `sort: handle
   unsorted chrom order (#3)`.
 - Branch per issue: `feat/3-sort`.
-- PRs go to **your own fork**: `gh pr create --repo <your-user>/ai_agent_workshop`.
+- PRs go to **your own fork** — see the fork rule at the top of this file.

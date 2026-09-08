@@ -3,12 +3,37 @@
 Copy-paste these, then edit. They are launch pads, not incantations — the second
 prompt you write yourself is always better than the one you copied.
 
-Two habits worth forming today:
+Three habits worth forming today:
 
 - **Give it a goal, not a procedure.** "Make the golden tests pass" beats a numbered
   list of edits. You are hiring a colleague, not writing a shell script.
 - **Plan first on anything non-trivial.** Shift+Tab into plan mode, read the plan,
   push back on it, *then* let it run.
+- **Put the standing rules in `CLAUDE.md`, not in every prompt.** Your fork name lives
+  there, which is why none of the prompts below repeat it.
+
+---
+
+## Setup
+
+> Check this machine is ready for a workshop that uses Claude Code, `gh` and
+> `bedtools`. Verify `gh auth status`, `bedtools --version`, and that
+> `ANTHROPIC_API_KEY` is set — check it's non-empty without printing it. Report
+> pass/fail for each. For anything that fails, give me the exact command to type
+> myself; don't try to fix it.
+
+> Fork `github.com/SACGF/ai_agent_workshop` to my GitHub account and clone my fork to
+> `~/ai_agent_workshop`, with `origin` pointing at my fork and `upstream` at SACGF.
+> Then show me `git remote -v` and tell me my fork's full `owner/name`.
+
+> Copy `specs/CLAUDE.md.example` to `CLAUDE.md` in the repo root, and fill in the fork
+> placeholder at the top with my actual fork name.
+
+Then pin it so it survives every `/clear`, using `#` from inside a session:
+
+```
+# gh issue create and gh pr create always pass --repo <you>/ai_agent_workshop. Never write to SACGF.
+```
 
 ---
 
@@ -17,9 +42,11 @@ Two habits worth forming today:
 > What is in this repository? Read the README and specs/, then tell me in five bullet
 > points what I am supposed to build today. Don't write any code.
 
-> Read `issues/` and file each of those three issues on my fork with `gh`. My fork is
-> `<your-github-username>/ai_agent_workshop`. Show me the `gh` commands before you run
-> them.
+> Read `issues/` and file each of those three issues on my fork with `gh`. Show me the
+> commands before you run them.
+
+Read the `--repo` in what it shows you. "Show me first" is the habit worth forming for
+anything that writes to the network.
 
 > Make `mytools --version` work. Pick the language, keep it to one file, and stop as
 > soon as `mytools --version` prints something and exits 0. Don't implement any
@@ -44,8 +71,8 @@ document full of decisions you never made and won't remember agreeing to.
 > Use `specs/mytools-spec-template.md` as the skeleton. Fill in only the decisions
 > I've actually made and leave the rest as `_______`, then show me what's still blank.
 
-**Stalled at 0:45?** Stop. `cp specs/fallback-spec.md SPEC.md` and move on — the spec
-is not the exercise, shipping is.
+**Stalled at 0:45?** Stop, tell it to copy `specs/fallback-spec.md` to `SPEC.md`, and
+move on — the spec is not the exercise, shipping is.
 
 ---
 
@@ -53,11 +80,19 @@ is not the exercise, shipping is.
 
 > Read SPEC.md. Break it into 5-7 GitHub issues, one per subcommand, each
 > independently implementable by someone who hasn't read the others. Give each one
-> acceptance criteria that reference the golden-test pattern in tests/README.md. File
-> them on `<your-github-username>/ai_agent_workshop` with `gh`.
+> acceptance criteria that reference the golden-test pattern in tests/README.md, then
+> file them on my fork.
 
 Independence is the point — you're about to run these in parallel and they must not
 collide in the same file.
+
+Then set the parallel session up (you attach yourself — the panes are your job):
+
+> Create three git worktrees as siblings of this repo — `../ws-sort` on branch
+> `feat/2-sort`, `../ws-merge` on `feat/3-merge`, `../ws-intersect` on
+> `feat/4-intersect`. Then start a detached tmux session called `ws` with one tiled
+> pane per worktree, each running `claude` in that directory. Don't attach — I'll do
+> that myself.
 
 > Read SPEC.md, tests/README.md and CLAUDE.md. Plan the implementation of issue #N.
 > Show me the plan — files you'll create, the overlap predicate you'll use, and how
@@ -77,16 +112,15 @@ Then switch models — plan with the strong one, execute with the cheap one:
 
 ## 1:50 — PR and review
 
-> Push this branch and open a PR against my fork with `gh pr create --repo
-> <your-github-username>/ai_agent_workshop`. Write a description that says what
+> Push this branch and open a PR against my fork. Write a description that says what
 > changed, what's tested, and what isn't.
 
 Reviewing your partner's PR:
 
-> Review this PR: `gh pr view <N> --repo <partner>/ai_agent_workshop --json title,body`
-> then `gh pr diff <N> --repo <partner>/ai_agent_workshop`. Focus on interval overlap
-> logic and BED coordinate handling — BED is 0-based half-open, so look hard at every
-> `<` and `<=`. Draft review comments; show them to me before posting.
+> Review PR #N on `<partner>/ai_agent_workshop` — that's a different fork to mine, so
+> read it there. Focus on interval overlap logic and BED coordinate handling — BED is
+> 0-based half-open, so look hard at every `<` and `<=`. Draft review comments and show
+> them to me before posting anything.
 
 Read the diff yourself before you post what the agent drafted. Rubber-stamping an
 agent's review of an agent's code is how the whole thing falls over.
