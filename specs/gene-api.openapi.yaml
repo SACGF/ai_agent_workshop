@@ -1,0 +1,162 @@
+openapi: 3.0.3
+
+info:
+  title: mytools gene lookup API
+  version: "1.0.0"
+  description: |
+    The contract `mytools` speaks when it resolves a gene symbol to coordinates.
+
+    All coordinates are **0-based half-open**, the same convention as BED. A gene
+    returned as `start: 43044294, end: 43125364` is the BED line
+    `chr17  43044294  43125364`. GTF/GFF3 are 1-based inclusive — if you build a
+    server from a GTF you must subtract 1 from every start. That is the same
+    off-by-one this whole workshop is about.
+
+    ## What "a gene's coordinates" means here
+
+    A gene has more than one defensible span, so this contract picks one: **the MANE
+    Select transcript span**. Not the widest transcript, not the GTF `gene` row — those
+    are wider (BRCA1's `gene` row runs ~45 kb past its MANE transcript). Both backends
+    below agree on this definition, which is the only reason they are interchangeable.
+
+    A GTF-backed server therefore filters on `tag "MANE_Select"`. Genes with no MANE
+    transcript (lncRNAs, most pseudogenes) are a 404.
+
+    ## Two servers, two clients, one shape
+
+    This file is the shape. `mytools` only ever sees `{symbol, chrom, start, end,
+    strand}` — it does not know or care where that came from. Two ways to supply it:
+
+    1. **Your own server (the interesting one).** Serve this contract directly from
+       whatever backend you like — load `data/genes.gtf` into Parquet, DuckDB, Redis,
+       SQLite, or a dict — and point `mytools` at it with a one-line base-URL change.
+       `data/genes.bed` is the golden answer for all 25 genes that have a MANE
+       transcript: your `/gene/BRCA1` must agree with it exactly.
+    2. **cdotlib.org (the always-available fallback).** Real, public, no auth, but it
+       serves cdot's own API, not this one. So it gets its own small client that
+       translates. See below. The room is never blocked on anyone's server.
+
+    ## The cdotlib.org client
+
+    Gene symbol to coordinates is ONE request:
+
+        GET https://cdotlib.org/transcripts/gene/{symbol}/mane/GRCh38?annotation_consortium=RefSeq
+
+    Response is `{"<accession>": {...transcript record...}}`. From the first value:
+
+        rec["genome_builds"]["GRCh38"]  ->  contig, strand, exons
+
+    - `exons` is a list of `[genomic_start, genomic_end, exon_number, cdna_start, cdna_end, gap]`,
+      already 0-based half-open. Gene span = `min(starts)` .. `max(ends)`.
+    - `contig` is a RefSeq accession, not a UCSC name. Map it:
+      `NC_000001.11 -> chr1`, `NC_000007.14 -> chr7`, `NC_000013.11 -> chr13`,
+      `NC_000017.11 -> chr17`, and so on.
+    - `strand` is already `"+"` / `"-"`.
+
+    Two gotchas worth knowing before you debug them:
+
+    - Drop `?annotation_consortium=RefSeq` and you get BOTH the RefSeq and Ensembl
+      halves of the MANE pair — two keys, not one.
+    - A gene with no MANE transcript returns `{}` with HTTP 200, and an unknown
+      symbol returns an **HTML** error page, not JSON. Handle both.
+
+    Machine-readable cdot spec: https://cdotlib.org/static/openapi.yaml
+    Human docs: https://cdotlib.org/static/api-docs.html  |  https://cdotlib.org/llms.txt
+
+servers:
+  - url: http://localhost:8000
+    description: Your own server, running locally.
+  # - url: http://<volunteer-vm-ip>:8000
+  #   description: A volunteer's server. Get the IP from the shared GitHub issue.
+
+paths:
+  /gene/{symbol}:
+    get:
+      operationId: getGene
+      summary: Resolve a gene symbol to coordinates.
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Gene symbol, case-insensitive (e.g. BRCA1).
+          schema:
+            type: string
+          example: BRCA1
+      responses:
+        "200":
+          description: The gene.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gene"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /genes:
+    get:
+      operationId: listGenesInRegion
+      summary: List genes overlapping a region.
+      parameters:
+        - name: region
+          in: query
+          required: true
+          description: Region as `chrom:start-end`, 0-based half-open.
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_.]+:\d+-\d+$'
+          example: chr17:43000000-43200000
+      responses:
+        "200":
+          description: Genes overlapping the region. Empty array if none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gene"
+        "400":
+          description: Malformed region string.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Gene:
+      type: object
+      required: [symbol, chrom, start, end, strand]
+      properties:
+        symbol:
+          type: string
+          example: BRCA1
+        chrom:
+          type: string
+          example: chr17
+        start:
+          type: integer
+          description: 0-based, inclusive.
+          example: 43044294
+        end:
+          type: integer
+          description: 0-based, exclusive.
+          example: 43125364
+        strand:
+          type: string
+          enum: ["+", "-"]
+          example: "-"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: unknown gene symbol
+
+  responses:
+    NotFound:
+      description: No such gene.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

@@ -1,0 +1,100 @@
+Answer key for data/broken.vcf, ROT13'd so nobody reads it by accident.
+Decode when you are done:
+  tr 'A-Za-z' 'N-ZA-Mn-za-m' < data/broken.vcf.answers.rot13
+==============================================================================
+NAFJRE XRL -- qngn/oebxra.ips
+=============================
+Fcrp: IPS i4.3, uggcf://fnzgbbyf.tvguho.vb/ugf-fcrpf/IPSi4.3.cqs
+20,002 erpbeqf, 19 urnqre yvarf, 13 cynagrq ivbyngvbaf. Abguvat ryfr vf jebat jvgu gur
+svyr: NP/NA/NS nterr jvgu gur trabglcrf rireljurer ryfr, gurer vf rknpgyl bar qhcyvpngr
+fvgr, naq rknpgyl bar bhg-bs-beqre cnve.
+
+JUNG GUR GBBYF NPGHNYYL PNGPU (zrnfherq: opsgbbyf 1.k, gnovk, clfnz)
+-------------------------------------------------------------------
+  opsgbbyf ivrj    rkvg 0, 3 jneavatf      -> I3, I4, I13
+  opsgbbyf fgngf   rkvg 0, 4 jneavatf      -> I3, I4, I5, I13
+  gnovk -c ips     vaqrk ohvyq SNVYF       -> I1, I12
+  clfnz            cnefrf nyy 20,002 erpbeqf, envfrf abguvat
+
+  Havba bs rirel gbby: 6 bs 13. Gur bgure frira ner vaivfvoyr gb nyy bs gurz. Rirel
+  svaqvat vf n JNEAVAT ba fgqree jvgu n MREB rkvg pbqr, fb n cvcryvar gung purpxf rkvg
+  pbqrf frrf n cresrpgyl urnygul svyr.
+
+  Vaivfvoyr gb nyy gbbyvat: I2, I6, I7, I8, I9, I10, I11.
+
+GUR GUVEGRRA
+------------
+I1   yvar 140    pue7:0          CBF = 0
+     IPS vf 1-ONFRQ; gur svefg onfr bs n pbagvt vf 1. CBF 0 vf erfreirq sbe gur
+     grybzrer pbairagvba, abg hfnoyr sbe n FAI.
+     Pnhtug ol: gnovk ("Pbbeqvangr <= 0 qrgrpgrq"). opsgbbyf ivrj fnlf abguvat.
+
+I2   yvar 890    pue7:54853507   DHNY = -12.4
+     DHNY vf n cuerq-fpnyrq fpber: >= 0, be '.' vs haxabja. Artngvir vf zrnavatyrff.
+     Pnhtug ol: abguvat.
+
+I3   yvar 1470   pue7:54961148   VASB xrl FIYRA hfrq, arire qrpynerq
+     Rirel VASB xrl arrqf n zngpuvat ##VASB urnqre yvar. ugfyvo thrffrf Glcr=Fgevat
+     naq pneevrf ba ertneqyrff.
+     Pnhtug ol: opsgbbyf (jneavat).
+
+I4   yvar 2330   pue7:55118599   SVYGRE inyhr YbjDhny hfrq, arire qrpynerq
+     Rirel SVYGRE inyhr rkprcg CNFF arrqf n ##SVYGRE urnqre yvar.
+     Pnhtug ol: opsgbbyf (jneavat).
+
+I5   yvar 3025   pue7:55244831   NP unf 1 inyhr sbe 2 NYG nyyryrf
+     NP vf Ahzore=N: rknpgyl bar inyhr cre NYG. NYG vf "T,G", fb NP arrqf gjb.
+     Pnhtug ol: opsgbbyf fgngf (jneavat, cevagrq bapr).
+
+I6   yvar 4140   pue7:55442819   NQ unf 2 inyhrf sbe 3 nyyryrf
+     NQ vf Ahzore=E: bar inyhr sbe ERS cyhf bar cre NYG. NYG vf "P,T", fb E = 3.
+     Pnhtug ol: abguvat.
+
+I7   yvar 5260   pue7:117283120  CY unf 3 inyhrf ng n gevnyyryvp fvgr
+     CY vf Ahzore=T. Qvcybvq jvgu a nyyryrf arrqf a(a+1)/2 inyhrf. Urer a = 3, fb 6
+     ner erdhverq, abg 3. Gur zbfg pbzzbayl obgpurq ehyr va gur fcrp.
+     Pnhtug ol: abguvat.
+
+I8   yvar 6320   pue7:117417879  TG = 1/3 jvgu n fvatyr NYG
+     Nyyryr vaqvprf eha 0..a_nyg. Bar NYG zrnaf bayl 0 naq 1 rkvfg; 3 ersref gb na
+     nyyryr gung jnf arire qrpynerq.
+     Pnhtug ol: abguvat.
+
+I9   yvar 7435   pue7:117559894  ERS = E
+     ERS znl pbagnva bayl N, P, T, G, A (hccre pnfr). VHCNP nzovthvgl pbqrf ner abg
+     crezvggrq va ERS.
+     Pnhtug ol: abguvat.
+
+I10  yvar 8650   pue7:117724482  QO=1
+     QO vf qrpynerq Ahzore=0, Glcr=Synt. N synt vf cerfrag be nofrag naq arire gnxrf
+     n inyhr.
+     Pnhtug ol: abguvat.
+
+I11  yvar 9221   pue7:117796742  qhcyvpngr fvgr jvgu pbasyvpgvat ERS
+     Yvar 9220 unf ERS=G naq yvar 9221 unf ERS=N ng gur fnzr PUEBZ+CBF. Obgu pnaabg
+     zngpu gur ersrerapr trabzr. Ercrngvat n CBF vf yrtny; pbagenqvpgvat ERS vf abg.
+     Pnhtug ol: abguvat.
+
+I12  yvar 11020  pue17:7623909 sbyybjrq ol 7623837
+     Erpbeqf jvguva n pbagvt zhfg nfpraq ol CBF. Oernxf gnovk vaqrkvat naq rirel
+     fgernzvat nytbevguz gung nffhzrf fbegrq vachg.
+     Pnhtug ol: gnovk (vaqrk ohvyq snvyf).
+
+I13  yvar 20021  pueZ:8993
+     Erpbeq ba n pbagvt jvgu ab ##pbagvt urnqre yvar, nccraqrq nsgre pue17 fb vg vf
+     bhg bs urnqre pbagvt beqre gbb.
+     Pnhtug ol: opsgbbyf (jneavat).
+
+GRNPUVAT ABGRF
+--------------
+- Gur urnqyvar: opsgbbyf rkvgf 0, clfnz envfrf abguvat, naq gur svyr vf fgvyy jebat va
+  13 cynprf. "Vg cnefrq" vf abg "vg vf inyvq". Jneavatf ba fgqree jvgu rkvg 0 ner
+  vaivfvoyr gb PV hayrff fbzrobql qrpvqrq gb ybbx.
+- I1 vf gur fnzr pbashfvba nf gur ORQ jbex, va n guveq qvnyrpg: IPS vf 1-onfrq, ORQ vf
+  0-onfrq unys-bcra, TGS vf 1-onfrq vapyhfvir. Nyy guerr yvir va guvf ercb.
+- I5, I6 naq I7 ner bar ehyr -- Ahzore=N/E/T pneqvanyvgl -- jrnevat guerr qvfthvfrf. Na
+  ntrag gung trarenyvfrf jevgrf n fvatyr purpx naq svaqf nyy guerr; bar gung cnggrea-
+  zngpurf svaqf bar naq fgbcf. Jbegu nfxvat juvpu lbhef qvq.
+- Gurer vf ab benpyr urer. opsgbbyf pnaabg unaq lbh gur evtug nafjre gur jnl vg qbrf
+  sbe orqgbbyf, juvpu vf rknpgyl jul guvf rkrepvfr arrqf havg grfgf: bar svkgher cre
+  ehyr, nffregvat gur inyvqngbe sverf ba gur onq pnfr naq fgnlf fvyrag ba n tbbq bar.
