@@ -199,13 +199,13 @@ Then **plan with a strong model, execute with a cheap one.** Use `/model` to swi
 Planning is where the money earns its keep; typing out the plan is not.
 
 Now go parallel — see [Working at agentic speed](#working-at-agentic-speed) below.
-One worktree and one Claude Code session per subcommand.
+One copy of the repo and one Claude Code session per subcommand.
 
 **Done when** two or more subcommands are implemented on separate branches and you've
 run the golden test seed against at least one of them:
 
 ```bash
-git branch --list 'feat/*'
+for d in ~/ws-*; do echo "$d  $(git -C "$d" branch --show-current)"; done
 ```
 
 ---
@@ -349,27 +349,26 @@ One agent is faster than you. Three agents are faster than you can read. The bin
 constraint stops being typing and becomes *supervision*, which is a different skill —
 these are the mechanics for it.
 
-Independent issues get one `git worktree` each, so three agents edit three checkouts
-of your repo without colliding. Each is a full working tree sharing one `.git`;
-branches stay independent, no stashing. Have the agent set that up:
+Agents collide if they share a directory, so give each one its own copy of the repo.
+Not a clever mechanism — literally three copies:
 
-> Create three git worktrees as siblings of this repo — `../ws-sort` on branch
-> `feat/2-sort`, `../ws-merge` on `feat/3-merge`, `../ws-intersect` on
-> `feat/4-intersect`. Then start a detached tmux session called `ws` with one tiled
-> pane per worktree, each running `claude` in that directory. Don't attach — I'll do
-> that myself.
+> Make three copies of this repo as siblings — `~/ws-sort`, `~/ws-merge` and
+> `~/ws-intersect` — and in each one create the branch for its issue: `feat/2-sort`,
+> `feat/3-merge`, `feat/4-intersect`. Then start a detached tmux session called `ws`
+> with one tiled pane per copy, each running `claude` in that directory. Don't attach
+> — I'll do that myself.
 
 <details>
 <summary>What that runs, if you want to read it first</summary>
 
 ```bash
-git worktree add ../ws-sort      -b feat/2-sort
-git worktree add ../ws-merge     -b feat/3-merge
-git worktree add ../ws-intersect -b feat/4-intersect
+cp -r ~/ai_agent_workshop ~/ws-sort      && git -C ~/ws-sort      checkout -b feat/2-sort
+cp -r ~/ai_agent_workshop ~/ws-merge     && git -C ~/ws-merge     checkout -b feat/3-merge
+cp -r ~/ai_agent_workshop ~/ws-intersect && git -C ~/ws-intersect checkout -b feat/4-intersect
 
-tmux new-session -d -s ws -c "$PWD/../ws-sort"
-tmux split-window -h -t ws -c "$PWD/../ws-merge"
-tmux split-window -v -t ws -c "$PWD/../ws-intersect"
+tmux new-session -d -s ws -c ~/ws-sort
+tmux split-window -h -t ws -c ~/ws-merge
+tmux split-window -v -t ws -c ~/ws-intersect
 tmux select-layout -t ws tiled
 tmux send-keys -t ws.0 claude Enter
 tmux send-keys -t ws.1 claude Enter
@@ -377,6 +376,12 @@ tmux send-keys -t ws.2 claude Enter
 ```
 
 </details>
+
+The repo is 9MB, so this costs milliseconds. Each copy is an ordinary repo with `origin`
+already pointing at your fork, so `gh pr create` works in every pane exactly as it did
+in the first one. There is nothing new to learn here, which is
+the point — `git worktree` does the same job more elegantly and is worth your time
+*after* today, but not during it.
 
 Then attach, because this part is yours — the panes are your supervision surface and
 nothing can sit in them for you:
@@ -392,8 +397,14 @@ back.
 Give each pane one issue: *"Implement issue #3. Read SPEC.md, CLAUDE.md and
 tests/README.md first. Run the golden tests before you say you're done."*
 
-When a branch is done, tell that pane to push and open a PR, then clean up the tree —
-`git worktree remove ../ws-sort` from the main clone.
+Two things follow from the copies being independent. Your branches live in three
+separate repos, so no single `git branch` shows them all — your fork is where they meet,
+once pushed. And a copied Python virtualenv doesn't work: `.venv` has absolute paths
+baked in. `mytools` is standard-library-only so nothing this hour needs one, but if a
+copy wants one, recreate it there rather than trusting the one that came along.
+
+When a branch is done, tell that pane to push and open a PR against your fork. Then
+`rm -rf ~/ws-sort` — the work is on GitHub, and the copy was always disposable.
 
 **Supervising three agents.** Zoom into one pane at a time; three scrolling logs is
 noise, not information. Let plan mode finish before you approve anything. Keep issues

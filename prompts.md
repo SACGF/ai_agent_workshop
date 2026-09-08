@@ -88,11 +88,11 @@ collide in the same file.
 
 Then set the parallel session up (you attach yourself — the panes are your job):
 
-> Create three git worktrees as siblings of this repo — `../ws-sort` on branch
-> `feat/2-sort`, `../ws-merge` on `feat/3-merge`, `../ws-intersect` on
-> `feat/4-intersect`. Then start a detached tmux session called `ws` with one tiled
-> pane per worktree, each running `claude` in that directory. Don't attach — I'll do
-> that myself.
+> Make three copies of this repo as siblings — `~/ws-sort`, `~/ws-merge` and
+> `~/ws-intersect` — and in each one create the branch for its issue: `feat/2-sort`,
+> `feat/3-merge`, `feat/4-intersect`. Then start a detached tmux session called `ws`
+> with one tiled pane per copy, each running `claude` in that directory. Don't attach
+> — I'll do that myself.
 
 > Read SPEC.md, tests/README.md and CLAUDE.md. Plan the implementation of issue #N.
 > Show me the plan — files you'll create, the overlap predicate you'll use, and how
