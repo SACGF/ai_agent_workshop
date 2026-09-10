@@ -208,6 +208,54 @@ exit $fail
 EOF
 chmod 0755 /usr/local/bin/workshop-doctor
 
+# Run immediately before snapshotting. Everything the master VM accumulated while
+# you were verifying it is per-person state, and a snapshot turns one organiser's
+# credentials into thirty attendees'.
+cat > /usr/local/bin/workshop-presnapshot <<'EOF'
+#!/usr/bin/env bash
+# Strip per-machine and per-person state, then snapshot.
+set -uo pipefail
+[ "$(id -u)" -eq 0 ] || { echo "run me as root: sudo workshop-presnapshot" >&2; exit 1; }
+u=${WORKSHOP_USER:-ubuntu}; h=$(getent passwd "$u" | cut -d: -f6)
+
+echo "== Credentials"
+# gh token (repo scope), git identity, and any Claude OAuth login. The theme and
+# trust answers in ~/.claude.json are deliberately KEPT — they are the whole
+# reason for a golden image. Only the credentials go.
+rm -rf "$h/.config/gh" "$h/.gitconfig" "$h/.claude/.credentials.json"
+if [ -f "$h/.claude.json" ] && command -v jq >/dev/null; then
+  tmp=$(mktemp) && jq 'del(.oauthAccount)' "$h/.claude.json" > "$tmp" \
+    && mv "$tmp" "$h/.claude.json" && chown "$u:$u" "$h/.claude.json"
+fi
+rm -f /etc/workshop-api-key        # cloud-init writes the real one per VM
+
+echo "== History and scratch"
+rm -f  "$h/.bash_history" "$h/.lesshst" "$h/.viminfo" "$h/provision.log"
+rm -rf "$h/.claude/projects" "$h/.claude/todos" "$h/.claude/usage-data"
+rm -rf /root/.bash_history /tmp/* /var/tmp/* 2>/dev/null
+journalctl --rotate --vacuum-time=1s >/dev/null 2>&1
+
+echo "== Machine identity"
+# Shared across clones otherwise: DHCP leases and journal IDs collide.
+truncate -s 0 /etc/machine-id; rm -f /var/lib/dbus/machine-id
+cloud-init clean --logs >/dev/null 2>&1 || true   # so each clone runs its own per-instance config
+
+echo "== Audit — these must all be absent or empty"
+for f in "$h/.config/gh" "$h/.gitconfig" "$h/.claude/.credentials.json" /etc/workshop-api-key; do
+  [ -e "$f" ] && echo "  STILL PRESENT: $f" || echo "  gone: $f"
+done
+grep -rl 'sk-ant' "$h" /etc 2>/dev/null | head && echo "  ^ API key material found — remove before snapshotting"
+
+echo "== SSH host keys (last, on purpose)"
+# Thirty VMs sharing a host key means any one of them can impersonate the others.
+# Your current session survives; new connections to THIS VM will not work until a
+# reboot regenerates them, so snapshot now rather than later.
+rm -f /etc/ssh/ssh_host_*
+echo
+echo "Done. Snapshot this VM now. Do not reconnect to it first."
+EOF
+chmod 0755 /usr/local/bin/workshop-presnapshot
+
 say "Message of the day"
 cat > /etc/motd <<'EOF'
 
@@ -405,5 +453,9 @@ cat <<EOF
   2. ANTHROPIC_API_KEY=sk-... workshop-doctor    # expect all ok
   3. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
      Know the real numbers before you size the attendee VMs.
-  4. Snapshot this VM.
+  4. sudo workshop-presnapshot
+     Strips what verifying this VM left behind — your gh token, git
+     identity, any Claude login, machine-id, SSH host keys. A snapshot
+     turns one organiser's credentials into thirty attendees'.
+  5. Snapshot this VM, without reconnecting to it first.
 EOF

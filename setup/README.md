@@ -27,8 +27,21 @@ ANTHROPIC_API_KEY=sk-... workshop-doctor        # every line must say ok
 # 3. the interactive bit — accept the theme and trust prompts, then quit
 claude
 
-# 4. snapshot the VM. That snapshot is what you clone thirty times.
+# 4. strip what verifying the VM left behind, then snapshot without reconnecting
+sudo workshop-presnapshot
+
+# 5. snapshot the VM. That snapshot is what you clone thirty times.
 ```
+
+`workshop-presnapshot` is not optional hygiene. Verifying a master VM means logging
+in to things, and a snapshot copies every one of those logins thirty times: your `gh`
+token with `repo` scope, your git identity on everybody's commits, any Claude account
+you signed in to. It also clears `machine-id` and the SSH host keys, which clones
+otherwise share. It deliberately keeps `~/.claude.json` — the theme and trust answers
+are the whole reason for a golden image — and strips only the credentials beside them.
+
+Better still, don't create the problem: rehearse `gh auth login` and `/remote-control`
+on a throwaway clone or your own laptop, never on the master.
 
 `provision.sh` is idempotent, so fix and re-run it as often as you like before
 snapshotting. Budget 30–40 minutes for a cold run: the R packages and the 3 GB
