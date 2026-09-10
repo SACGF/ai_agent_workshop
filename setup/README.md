@@ -230,24 +230,30 @@ Boot check: `cloud-init status --wait` on one VM, or the marker file
 
 #### Or bake the password in and skip user-data entirely
 
-If you would rather not paste a customisation script at all, set the password on the
-master before `workshop-presnapshot` and let the snapshot carry it:
+Measured, not assumed: setting the password with `chpasswd` on the master and
+snapshotting **does not work**. Password login works on the master and fails on every
+clone. A clone boots with a new instance-id, so cloud-init re-runs its per-instance
+modules, and the `users` module applies the distro default `lock_passwd: true` to
+`ubuntu` — your password arrives in `/etc/shadow` and is locked at first boot.
+`passwd -S ubuntu` on a clone says `L`.
+
+The fix is to put the password where cloud-init will apply it *on every clone*, in a
+config file on the image. `set_passwords` runs after the users module, every time, so
+it wins:
 
 ```bash
-echo 'ubuntu:<the password>' | sudo chpasswd
-printf 'PasswordAuthentication yes\n' | sudo tee /etc/ssh/sshd_config.d/00-workshop.conf
-sudo systemctl restart ssh
-sudo sshd -T | grep -i '^passwordauthentication'     # want: yes
+sudo workshop-set-password '<the shared password>'
 ```
 
-`00-` is not cosmetic: sshd takes the **first** value it finds in `sshd_config.d`, and
-the Ubuntu cloud image ships `60-cloudimg-settings.conf` saying `no`.
+That writes `/etc/cloud/cloud.cfg.d/99-workshop-password.cfg` (0600, plain text — the
+snapshot carries it, which is the point and also the reason not to keep or share that
+image), sets the password on the master too, and drops a `00-workshop.conf` that beats
+the cloud image's `60-cloudimg-settings.conf`. `workshop-doctor` reports whether it is
+in place.
 
-**Verify this on one clone before launching the rest.** A clone boots with a fresh
-instance-id, so cloud-init re-runs its per-instance user module, whose default for the
-distro user is `lock_passwd: true` — it may re-lock the password you baked in. If the
-login works on that one VM, this is the least-moving-parts option; if it doesn't, pass
-the user-data above, which sets the password positively on every boot.
+Then launch with no Customisation Script at all. **Boot one clone and log in before
+building the other 23** — that is a two-minute check against a mistake that otherwise
+shows up as twenty-four unreachable VMs.
 
 ### 4. Collect the IPs and print the cards
 

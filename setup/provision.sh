@@ -141,6 +141,52 @@ echo "git identity: $(git config --global user.name) <$(git config --global user
 EOF
 chmod 0755 /usr/local/bin/workshop-git-identity
 
+# Bake the shared attendee password into the image, so clones need no user-data.
+cat > /usr/local/bin/workshop-set-password <<'EOF'
+#!/usr/bin/env bash
+# Set the password attendees log in with, on this VM and on every clone of it.
+#
+# Why not just `chpasswd` and snapshot: a clone boots with a new instance-id, so
+# cloud-init re-runs its per-instance modules, and the users module applies the
+# distro default lock_passwd: true to the default user. Your baked password is in
+# /etc/shadow and then locked at first boot — password SSH works on the master and
+# fails on every clone. cloud-init's set_passwords module runs after users, every
+# time, so a config file it reads wins. That is what this writes.
+set -euo pipefail
+[ "$(id -u)" -eq 0 ] || { echo "run me as root: sudo workshop-set-password <password>" >&2; exit 1; }
+pw=${1:-}; [ -n "$pw" ] || { echo "usage: sudo workshop-set-password <password>" >&2; exit 1; }
+u=${WORKSHOP_USER:-ubuntu}
+
+install -m 0600 /dev/stdin /etc/cloud/cloud.cfg.d/99-workshop-password.cfg <<CFG
+#cloud-config
+# Written by workshop-set-password. Applies on every boot with a new instance-id,
+# which is every clone of this image.
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: $u
+      password: $pw
+      type: text
+CFG
+
+# The master itself never gets a new instance-id, so set it here directly too.
+echo "$u:$pw" | chpasswd
+# sshd takes the FIRST value it finds; the cloud image ships 60-cloudimg-settings.conf
+# saying no, so this has to sort before it.
+printf 'PasswordAuthentication yes\n' > /etc/ssh/sshd_config.d/00-workshop.conf
+systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null || true
+
+echo "set for $u. sshd now says: $(sshd -T 2>/dev/null | grep -i '^passwordauthentication')"
+echo "passwd -S: $(passwd -S "$u")            # want P, not L"
+echo
+echo "The password is now in the image, in plain text, at"
+echo "  /etc/cloud/cloud.cfg.d/99-workshop-password.cfg  (0600)"
+echo "which is the point — but it does mean the snapshot carries it. Fine for VMs"
+echo "deleted the same day; not fine for an image you keep or share."
+EOF
+chmod 0755 /usr/local/bin/workshop-set-password
+
 # Organiser's pre-flight. Deliberately NOT mentioned in the MOTD: checking the
 # machine is the attendees' first exercise, and a doctor script does it for them.
 cat > /usr/local/bin/workshop-doctor <<'EOF'
@@ -161,6 +207,14 @@ check python3  python3 --version
 # tabix and ssh arrive as Recommends of other packages normally, and the main
 # install runs --no-install-recommends. Check them rather than assume them.
 check tabix    tabix --version;     check ssh      ssh -V
+# The attendee password has to survive cloning, which means living in a cloud-init
+# config rather than only in /etc/shadow. See workshop-set-password.
+if [ -s /etc/cloud/cloud.cfg.d/99-workshop-password.cfg ]; then
+  echo "ok   attendee password    baked for clones"
+else
+  echo "note attendee password    not baked — clones get no password SSH unless you"
+  echo "                          pass the user-data at launch. sudo workshop-set-password <pw>"
+fi
 check Rscript  Rscript --version
 check "R pkgs" Rscript -e 'invisible(lapply(c("optparse","data.table","testthat","lintr","jsonlite","httr2","plumber"), library, character.only=TRUE)); cat("all seven load\n")'
 # Claude auth is per-attendee: each person signs in with /login using their own
@@ -452,14 +506,18 @@ df -h / | tail -1
 
 say "Done. Next:"
 cat <<EOF
-  1. workshop-doctor                             # expect all ok
+  1. sudo workshop-set-password <the shared password>
+     Only needed if you want to launch clones with no user-data. Baking it
+     with plain chpasswd does NOT survive cloning — cloud-init re-locks the
+     account on a new instance-id.
+  2. workshop-doctor                             # expect all ok
      The image ships signed out of Claude and gh. Attendees do their own
      /login and their own theme prompt — it is their machine.
-  2. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
+  3. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
      Know the real numbers before you size the attendee VMs.
-  3. sudo workshop-presnapshot
+  4. sudo workshop-presnapshot
      Strips what verifying this VM left behind — your gh token, git
      identity, any Claude login, machine-id, SSH host keys. A snapshot
      turns one organiser's credentials into thirty attendees'.
-  4. Snapshot this VM, without reconnecting to it first.
+  5. Snapshot this VM, without reconnecting to it first.
 EOF
