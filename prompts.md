@@ -16,11 +16,19 @@ Three habits worth forming today:
 
 ## Setup
 
+Do these two first, in a plain shell — both need a browser or a human, so no prompt
+gets you out of them:
+
+```bash
+gh auth login            # say yes to "Authenticate Git with your GitHub credentials"
+workshop-git-identity    # your git name and email, read back off GitHub
+```
+
 > Check this machine is ready for a workshop that uses Claude Code, `gh` and
-> `bedtools`. Verify `gh auth status`, `bedtools --version`, and that
-> `ANTHROPIC_API_KEY` is set — check it's non-empty without printing it. Report
-> pass/fail for each. For anything that fails, give me the exact command to type
-> myself; don't try to fix it.
+> `bedtools`. Verify `gh auth status`, `bedtools --version`, `git config --global
+> user.email`, and that `ANTHROPIC_API_KEY` is set — check it's non-empty without
+> printing it. Report pass/fail for each. For anything that fails, give me the exact
+> command to type myself; don't try to fix it.
 
 > Fork `github.com/SACGF/ai_agent_workshop` to my GitHub account and clone my fork to
 > `~/ai_agent_workshop`, with `origin` pointing at my fork and `upstream` at SACGF.
@@ -143,6 +151,12 @@ Golden tests alone aren't the goal — ask for the other half:
 
 > Push that and watch the Actions run with `gh run watch`. If it fails, fix it and
 > push again until it's green.
+
+Two blockers here that no prompt fixes, because they're permissions rather than code.
+Actions are **disabled by default on a fork** — click the button on your fork's
+Actions tab. And if pushing `.github/workflows/ci.yml` is rejected with *refusing to
+allow an OAuth App to create or update workflow*, run `gh auth refresh -s workflow`
+and push again.
 
 Then break it on purpose:
 

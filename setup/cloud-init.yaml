@@ -1,0 +1,48 @@
+#cloud-config
+# Per-VM layer for a workshop VM (Ubuntu 26.04). Everything that is the same on
+# every VM lives in setup/provision.sh, baked into the snapshot. This file only
+# carries what differs per attendee.
+#
+# Substitute before use — see setup/README.md for the render loop:
+#   __HOSTNAME__            e.g. ws-07
+#   __VM_PASSWORD__         per-VM random, 20+ chars. Never shared across VMs.
+#   __ANTHROPIC_API_KEY__   per-VM key, so spend caps bite individually and the
+#                           wrap-up "what your afternoon cost" is per-person.
+#
+# Never commit a rendered copy. Placeholders only in git.
+
+hostname: __HOSTNAME__
+timezone: Australia/Adelaide
+locale: en_AU.UTF-8
+
+# Password SSH, deliberately. Keys mean collecting thirty public keys beforehand
+# or emailing thirty private ones, and neither survives contact with a room.
+# This writes /etc/ssh/sshd_config.d/50-cloud-init.conf, which beats the image
+# default of PasswordAuthentication no. Pair it with a source-IP restriction in
+# the security group — see setup/README.md.
+ssh_pwauth: true
+chpasswd:
+  expire: false            # no forced change at first login; there is no time
+  users:
+    - name: ubuntu
+      password: __VM_PASSWORD__
+      type: text
+
+write_files:
+  # Sourced by /etc/profile.d/99-workshop.sh, which provision.sh installs.
+  - path: /etc/workshop-api-key
+    permissions: '0644'
+    content: |
+      export ANTHROPIC_API_KEY="__ANTHROPIC_API_KEY__"
+
+runcmd:
+  # No-op on a snapshot that already ran provision.sh. On a bare Ubuntu image
+  # this does the whole build at first boot — slower (several minutes, and every
+  # VM pulls from apt and GitHub at once), but it needs no golden image.
+  - |
+    if ! command -v workshop-doctor >/dev/null; then
+      bash -c "$(curl -fsSL https://raw.githubusercontent.com/SACGF/ai_agent_workshop/main/setup/provision.sh)"
+    fi
+  - touch /var/lib/cloud/workshop-ready
+
+final_message: "Workshop VM ready after $UPTIME seconds. Log in as ubuntu."

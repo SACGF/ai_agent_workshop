@@ -32,23 +32,28 @@ Everything else, tell it.
 
 ## Setup (10 minutes, do this first)
 
-Two commands. The agent does the rest.
+Four commands, and only because each one needs a human. The agent does the rest.
 
 ```bash
-claude --version     # must print a version — everything below depends on it
-claude               # start it, from anywhere
+gh auth login            # first. Browser on your laptop, code from this terminal.
+                         #   Say yes to "Authenticate Git with your GitHub
+                         #   credentials" — without it, git push has no password.
+workshop-git-identity    # sets your git name and email from your GitHub account
+claude --version         # must print a version — everything below depends on it
+claude                   # start it, from anywhere
 ```
+
+`gh auth login` is the one thing the agent can't do for you: it needs a browser you
+are sitting in front of. And an unset git identity doesn't fail until your first
+commit, twenty minutes from now, so get it out of the way.
 
 Then, in Claude Code:
 
 > Check this machine is ready for a workshop that uses Claude Code, `gh` and
-> `bedtools`. Verify `gh auth status`, `bedtools --version`, and that
-> `ANTHROPIC_API_KEY` is set — check it's non-empty without printing it. Report
-> pass/fail for each. For anything that fails, give me the exact command to type
-> myself; don't try to fix it.
-
-`gh auth login` is the one it can't do for you — it needs a browser. Everything else
-it can diagnose.
+> `bedtools`. Verify `gh auth status`, `bedtools --version`, `git config --global
+> user.email`, and that `ANTHROPIC_API_KEY` is set — check it's non-empty without
+> printing it. Report pass/fail for each. For anything that fails, give me the exact
+> command to type myself; don't try to fix it.
 
 Now have it fork this repo:
 
@@ -240,6 +245,16 @@ running automatically on every push:
 all three is the exercise. `tests/README.md` explains why you want both kinds of test
 and not just the golden ones.
 
+Two things bite everyone here, both one command each. **Forks ship with Actions
+disabled** — open your fork's Actions tab in a browser and click the button, or
+nothing you push will ever run. And pushing a change to `.github/workflows/` needs a
+scope `gh auth login` didn't ask for; if you see *refusing to allow an OAuth App to
+create or update workflow*, that's it:
+
+```bash
+gh auth refresh -s workflow
+```
+
 **Then break it on purpose:**
 
 > Introduce a subtle off-by-one bug in the interval overlap logic on a new branch —
@@ -414,6 +429,34 @@ theirs: fix the spec, then tell them both.
 
 ---
 
+## Taking it home
+
+Today's VM is disposable, which is the only reason we've been this relaxed. It
+holds nothing but a fork you can re-clone, and it gets deleted at 3:20. Your own
+machine is not like that: the agent runs with your SSH keys, your cloud
+credentials, your access to whatever is in `~/.ssh` and `~/.aws`. The code is in
+git and safe. The credentials sitting next to it are the thing worth thinking
+about.
+
+The cheapest containment that actually works is a **separate user account**:
+
+```bash
+sudo adduser claude          # its own home, its own gh auth, no sudo
+sudo -iu claude              # a login shell — plain `su claude` leaves you in
+                             #   your own home with your own environment
+```
+
+Do the agent's work in there. It gets its own `gh auth login`, ideally a
+fine-grained token limited to the repos it needs, and no path to your keys. You
+pay one login hop and lose nothing else. A devcontainer or a VM draws a harder
+boundary if you want one, at more friction.
+
+Be clear about what this buys. It contains the *filesystem*, not the
+*authority*: whatever you grant that account, the agent has. A token that can
+push to main can push to main. Scope the token, not just the home directory.
+
+---
+
 ## What's in this repo
 
 ```
@@ -434,10 +477,24 @@ data/
 tests/
   README.md                     the golden-test pattern + one worked example
 issues/                         issue texts to re-file on your fork
+setup/                          how this VM was built — cloud-init and a script
 .github/workflows/ci.yml        CI skeleton — currently echoes "no tests yet"
 ```
 
 There is no `mytools` here. That's yours to build.
+
+Also on the VM, outside the repo, there's **`/data`** — GRCh38 with a `.fai` and a
+`chrom.sizes`, for the bedtools subcommands that want real sequence or chromosome
+lengths (`getfasta`, `nuc`, `slop -g`, `complement -g`). Same GENCODE release as
+`data/genes.gtf`, so the coordinates agree:
+
+```bash
+bedtools getfasta -fi /data/GRCh38.fa -bed data/genes.bed -name | head
+```
+
+Mind the two directories. `/data` is the reference genome, read-only. `data/` in this
+repo is the fixtures. If you say "the data directory" to an agent it will guess, so
+say which one.
 
 ## Licence
 
