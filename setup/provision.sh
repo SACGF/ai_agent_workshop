@@ -250,7 +250,23 @@ elif [ -s "$GENOME_DIR/GRCh38.fa.fai" ]; then
   echo "already present at $GENOME_DIR/GRCh38.fa"
 else
   mkdir -p "$GENOME_DIR"
-  echo "streaming $GENOME_URL, keeping: $GENOME_CONTIGS"
+  # Check before spending six minutes on a download that cannot land. The
+  # toolchain above (R, rust, go, uv's Python) eats several GB, so free space
+  # here is not what it was when the VM booted.
+  need=1; [ "$GENOME_CONTIGS" = all ] && need=4
+  free_gb=$(df -BG --output=avail "$GENOME_DIR" | tail -1 | tr -dc 0-9)
+  if [ "${free_gb:-0}" -lt "$need" ]; then
+    echo "ERROR: ${free_gb}G free in $GENOME_DIR, need ~${need}G for GENOME_CONTIGS=$GENOME_CONTIGS"
+    echo "       Either give the VM a bigger disk, or re-run with the subset:"
+    echo "         GENOME_CONTIGS=\"chr7 chr17 chrM\" sudo -E bash \$0    # ~250 MB"
+    echo "       That covers every contig the fixtures need sequence for, and"
+    echo "       chrom.sizes stays complete either way."
+    exit 1
+  fi
+  # A part-file from an interrupted run is dead weight — several GB of it.
+  # Clear it however we leave this block.
+  trap 'rm -f "$GENOME_DIR/.genome.fa.part" "$GENOME_DIR/.chrom.sizes.part"' EXIT
+  echo "streaming $GENOME_URL, keeping: $GENOME_CONTIGS (${free_gb}G free)"
   # Write to temp names, so an interrupted download never looks complete.
   curl -fL --retry 3 --retry-delay 5 "$GENOME_URL" | gzip -dc | awk \
     -v want="$GENOME_CONTIGS" -v sizes="$GENOME_DIR/.chrom.sizes.part" '
@@ -262,6 +278,7 @@ else
   ' > "$GENOME_DIR/.genome.fa.part"
   mv "$GENOME_DIR/.genome.fa.part"  "$GENOME_DIR/GRCh38.fa"
   mv "$GENOME_DIR/.chrom.sizes.part" "$GENOME_DIR/GRCh38.chrom.sizes"
+  trap - EXIT
   samtools faidx "$GENOME_DIR/GRCh38.fa"
   echo "kept $(cut -f1 "$GENOME_DIR/GRCh38.fa.fai" | tr '\n' ' ')-- $(du -h "$GENOME_DIR/GRCh38.fa" | cut -f1)"
   echo "chrom.sizes covers $(wc -l < "$GENOME_DIR/GRCh38.chrom.sizes") contigs"
