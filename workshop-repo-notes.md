@@ -4,8 +4,9 @@ You are helping me scaffold a GitHub template repository for a 3.5-hour hands-on
 workshop teaching AI coding agents (Claude Code) to professional bioinformaticians
 and PhD students. Attendees are mostly **new to Claude Code**. Each attendee gets an
 Ubuntu 24 VM with `gh`, standard Python, R, and internet access. Auth is via
-workshop API keys pre-set as `ANTHROPIC_API_KEY` on the VMs. Attendees **fork this
-repo** and work in their fork.
+one workshop Claude subscription account each, signed in with `/login` on the day.
+No API keys on the VMs. Attendees **fork this repo** in the browser and work in
+their fork.
 
 Read all of these notes before creating anything, then build the repo.
 
@@ -99,10 +100,10 @@ Agenda (3.5 h):
   subcommands.
 - 1:45–2:00 — Break. Kick off a long task, connect `/remote-control` to the
   Claude app, and go outside with it — the lesson is that supervision does not
-  require a keyboard. NOTE: Remote Control requires a Pro/Max/Team/Enterprise
-  login; API keys are not supported, so attendees on the workshop key must
-  `unset ANTHROPIC_API_KEY` and `/login` with their own subscription, or just
-  take the break and watch the demo from the front. Never block the room on it.
+  require a keyboard. Works for the whole room because everyone signs in with
+  `/login` at setup; it is the one thing the subscription accounts buy that an
+  API key would not — neither a key nor a `claude setup-token` token can
+  establish a Remote Control session.
 - 2:00–2:40 — PR + human review (pair up, review each other's PRs with
   `gh pr review`) + guardrails: agent adds golden tests vs bedtools, a linter,
   GitHub Actions; then deliberately introduce a bug and watch CI catch it.
@@ -198,5 +199,5 @@ exercise). Issues:
 - Do not implement any mytools functionality anywhere in this repo.
 
 When done, print a summary tree and a checklist of the manual TODOs left for me
-(verify cdotlib.org endpoints, set per-key spend caps, install bedtools in the
+(verify cdotlib.org endpoints, check the account login flow, install bedtools in the
 VM image, dry-run the whole agenda once).

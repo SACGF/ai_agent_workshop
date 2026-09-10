@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 workshop, "Agentic Coding for Bioinformaticians" (Claude Code, taught to professional
 bioinformaticians and PhD students who are mostly new to it). Attendees fork this repo
 and work in their fork on Ubuntu 24 VMs that already have `gh`, Python, R, `bedtools`
-and `ANTHROPIC_API_KEY` set.
+set up. Each attendee signs in to Claude Code with one of 24 workshop
+subscription accounts (`/login`); there are no API keys on the VMs.
 
 The repo is **scaffolding, not software**. As of the initial commit it contains only
 `README.md` (a stub), `LICENSE`, `.gitignore` and `workshop-repo-notes.md`.
@@ -75,7 +76,13 @@ is by inspection against `workshop-repo-notes.md`, plus `gh` for issues/PRs.
   `GET /transcripts/gene/{sym}/mane/GRCh38?annotation_consortium=RefSeq` -> take the
   first value -> `genome_builds.GRCh38` -> exon min/max for the span, plus an
   `NC_000017.11 -> chr17` contig map. Verified against known GRCh38 coordinates.
-- Set per-key spend caps on the workshop API keys.
+- ~~Set per-key spend caps on the workshop API keys.~~ — moot as of 2026-09-10: 24
+  individual subscription accounts instead, one per attendee, signed in with
+  `/login`. Remote Control needs a real subscription login — neither an API key nor
+  a `claude setup-token` token can establish one — which is why the accounts are
+  worth the handling. Open: whether those accounts log in by password or by emailed
+  code, which decides whether attendees do their own `/login` at 0:05 or organisers
+  do 24 of them the day before.
 - ~~Confirm `bedtools` is in the VM image.~~ — v2.31.1 present on the build box; still
   worth confirming on the actual attendee image.
 - Dry-run the full agenda once.
