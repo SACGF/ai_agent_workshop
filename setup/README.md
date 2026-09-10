@@ -6,9 +6,10 @@ log in as `ubuntu` over SSH with a password and do everything in that account.
 Two files:
 
 - **`provision.sh`** — everything identical on every VM. Run it as root.
-- **`cloud-init.yaml`** — only what differs per attendee: hostname and password.
-  No Claude credentials: attendees sign in themselves with one of the workshop
-  subscription accounts.
+- **`cloud-init.yaml`** — the per-VM layer, which on reflection is one shared
+  password and nothing else. Hostnames come from Nectar's instance names, and
+  attendees sign in to Claude themselves with one of the workshop subscription
+  accounts.
 
 ## The build
 
@@ -152,65 +153,95 @@ The repo has to be public for this — attendees fork it, and forking needs read
 access. That also makes the `curl | bash` above work without auth. Keep secrets out of
 it: passwords and account credentials are rendered per VM below, never committed.
 
-## Per-VM
+## Deploying on Nectar
 
-The order is **passwords first, VMs second, IPs last**. A password is baked into the
-VM at boot and cannot be read back off it afterwards, so there is nothing to collect
-from a running machine — you generate the password, then create the VM with it. The
-IP is the only field that works the other way around.
+**One cloud-init, one password, every VM.** Twenty-four rendered files and twenty-four
+passwords buy you isolation you don't want to pay for here: these VMs live for one
+afternoon and are deleted at the end of it. The single mitigation worth having is the
+security group below, and it is worth more than per-VM passwords were.
 
-### 1. Render one cloud-init per attendee
+The password still can't be read back off a running VM — it is baked in at boot — so
+generate it before you launch anything.
 
-Before any VM exists. Write the output somewhere outside the repo — it contains a live
-password.
+### 1. Render the one file
 
 ```bash
 out=~/workshop-vms; mkdir -p "$out"; chmod 700 "$out"
-for i in $(seq -w 1 30); do
-  pw=$(grep -xE '[a-z]{3,7}' /usr/share/dict/words | shuf -n4 | paste -sd- -)
-  sed -e "s/__HOSTNAME__/ws-$i/" \
-      -e "s/__VM_PASSWORD__/$pw/" \
-      setup/cloud-init.yaml > "$out/ws-$i.yaml"
-  echo "ws-$i,$pw" >> "$out/cards.csv"
-done
+pw=$(grep -xE '[a-z]{3,7}' /usr/share/dict/words | shuf -n4 | paste -sd- -)
+sed "s/__VM_PASSWORD__/$pw/" setup/cloud-init.yaml > "$out/workshop.yaml"
+echo "$pw"        # goes on the projector, not on a card
 ```
 
-Four words is ~55 bits — not falling to online guessing in an afternoon, and
-typeable from a printed card with no echo by someone on an unfamiliar keyboard
-layout. `openssl rand -base64 18` is stronger on paper and worse in a room: it gets
-mistyped, and then mistyped again every time the venue wifi drops. Skim the column
-once before printing — a system wordlist will occasionally offer a word you would
-rather not hand to a room. (`/usr/share/dict/words` comes from `wamerican`; any
-wordlist does.)
+Four words beats `openssl rand -base64 18` for the only property that matters now:
+everyone in the room has to type it, from the projector, with no echo, on whatever
+keyboard layout their laptop has. Skim it before you show it — a system wordlist will
+occasionally offer a word you'd rather not put on a screen. (`/usr/share/dict/words`
+comes from `wamerican`; any wordlist does.)
 
-### 2. Create the VMs
+Keep `$out` out of the repo. It holds a live password.
 
-Launch each one from the snapshot with its own file as user-data, and name the
-instance after its hostname so step 3 is a join rather than a puzzle. On a bare
-Ubuntu image with no snapshot the same file still works — it detects the missing
-build and runs `provision.sh` at first boot, costing several minutes and making
-every VM pull from apt and GitHub simultaneously.
+### 2. Security group
 
-Boot check: `cloud-init status --wait` on the VM, or the marker file
-`/var/lib/cloud/workshop-ready`.
-
-### 3. Join the IPs, then print
-
-Get `host,ip` out of your cloud however it offers it — a CSV download from the
-console, its CLI, or typing twenty-four lines by hand — as `ips.csv`, then join on the
-hostname:
+Nectar's default group denies inbound, so SSH needs a rule. Restrict 22 to the venue's
+public IP if you can get it — that one rule does more than anything else here, because
+it means nothing else has to be airtight.
 
 ```bash
-join -t, <(sort ips.csv) <(sort "$out/cards.csv") > "$out/cards-final.csv"
-# ws-01,203.0.113.17,cobra-mantle-drift-pony
+openstack security group create workshop
+openstack security group rule create --proto tcp --dst-port 22 \
+    --remote-ip <venue-ip>/32 workshop          # drop --remote-ip to allow the world
+openstack security group rule create --proto tcp --dst-port 8000 workshop
 ```
 
-That file is the mail merge, and a spreadsheet is a perfectly good way to drive it.
-Each card carries both logins the attendee needs, and nothing else:
+Port 8000 is for the gene-server stretch goal: a volunteer serves on `0.0.0.0:8000` and
+the room reaches it by public IP. Without the rule that exercise produces a URL nobody
+can open.
+
+### 3. Launch all of them at once
+
+From the snapshot, same user-data for every instance. In the **dashboard**: Launch
+Instance → Source → Instance Snapshot → your snapshot; Flavour; **Count: 24**; Security
+Groups → `workshop`; Configuration → paste `workshop.yaml` as the Customisation Script.
+Nectar names them `ws-1 … ws-24`, and cloud-init takes each hostname from the instance
+name — which is why the file no longer sets one.
+
+Or the CLI:
+
+```bash
+openstack server create \
+  --image <your-snapshot> --flavor <your-flavour> \
+  --security-group workshop --key-name <your-keypair> \
+  --user-data "$out/workshop.yaml" \
+  --min 24 --max 24 ws
+```
+
+`--key-name` is your own recovery route, not the attendees' — Nectar expects a key pair
+at launch and they are logging in with the password. Check your flavour's **root disk**
+against *Sizing the VM* above before you commit to 24 of them: the genome wants ~3.5 GB
+and the toolchain several more. If the flavour is too small, either attach a volume or
+rebuild the image with `GENOME_CONTIGS="chr7 chr17 chrM"`.
+
+On a bare Ubuntu image with no snapshot the same file still works — it detects the
+missing build and runs `provision.sh` at first boot, costing several minutes per VM and
+making all of them pull from apt and GitHub simultaneously.
+
+Boot check: `cloud-init status --wait` on one VM, or the marker file
+`/var/lib/cloud/workshop-ready`.
+
+### 4. Collect the IPs and print the cards
+
+```bash
+openstack server list --name 'ws-' -f value -c Name -c Networks \
+  | awk '{sub(/.*=/,"",$2); print $1","$2}' | sort -V > "$out/ips.csv"
+```
+
+Eyeball it — a VM with more than one address prints more than one, and you want the
+public one. That file plus your list of Claude accounts is the mail merge; a
+spreadsheet is a perfectly good way to drive it. Each card then needs only two things,
+because the VM password is on the projector:
 
 ```
   ws-07     ssh ubuntu@203.0.113.17
-            cobra-mantle-drift-pony
 
   Claude    workshop-07@example.org
             <that account's password>
@@ -222,9 +253,6 @@ The `tmux` line is not decoration. Venue wifi drops, and without it a dropped
 connection kills a Claude Code session mid-exercise; with it, reconnecting and
 `tmux attach` costs fifteen seconds. It also makes the balcony break in the agenda
 work.
-
-If your cloud hands out predictable DNS names, use those on the card instead and
-skip the join entirely.
 
 ### The Claude accounts
 
@@ -253,12 +281,14 @@ a session is lost.
 
 ## Passwords, and why they are fine here
 
-- **Four random words (~55 bits), different on every VM.** Public-IP SSH is
-  brute-forced continuously; a weak or shared password is a miner on your cloud
-  bill inside the hour. Four words from a 25k wordlist is not falling in 3.5
-  hours, or in 3.5 years.
-- **Restrict SSH to the venue's public IP** in whatever your cloud calls its inbound
-  firewall rules, if you can get the venue's IP. Then none of the above matters.
+- **One four-word password, shared across all the VMs.** Deliberate: it goes on the
+  projector, twenty-four people type it once, and there is no per-VM rendering, no
+  card to mistype and no join to get wrong. Four words from a 25k wordlist is ~55
+  bits, so the shared part is the exposure, not the strength.
+- **Restrict SSH to the venue's public IP** in the security group. This is the control
+  that actually matters — public-IP SSH is brute-forced continuously, and one shared
+  password means one guess compromises the set rather than one VM. With the rule, that
+  whole sentence stops applying.
 - **Open 8000 inbound** as well, or the volunteer gene-server stretch goal
   produces a URL nobody in the room can reach.
 - Delete the VMs at the end. That is the actual security control.
@@ -321,6 +351,9 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
       so having them click it a day early surfaces SSO and repo-creation problems
       before 0:05 rather than during it. Forking early costs them nothing — forks
       don't copy issues either way.
+- [ ] **Nectar allocation headroom.** 24 instances plus spares needs the instance and
+      VCPU quota to match, and a quota refusal at launch time is a slow thing to fix.
+      Check it the week before, not the morning of.
 - [ ] 2–3 spare VMs powered on. There is no rebuild time in a 3.5-hour session,
       so recovery has to be "here is a new IP".
 - [ ] Dry-run the full agenda on a clone of the snapshot.

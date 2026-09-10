@@ -441,7 +441,7 @@ fi
 say "Firewall"
 # The volunteer gene server serves on :8000 and others reach it by public IP.
 # ufw is inactive on the stock image, so these only matter if you enable it —
-# your cloud's inbound firewall rules are the real gate.
+# the Nectar security group is the real gate.
 ufw allow 22/tcp   >/dev/null 2>&1 || true
 ufw allow 8000/tcp >/dev/null 2>&1 || true
 

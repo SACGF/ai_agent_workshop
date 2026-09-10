@@ -3,10 +3,13 @@
 # every VM lives in setup/provision.sh, baked into the snapshot. This file only
 # carries what differs per attendee.
 #
-# Substitute before use — see setup/README.md for the render loop:
-#   __HOSTNAME__            e.g. ws-07
-#   __VM_PASSWORD__         per-VM, four random words (~55 bits). See setup/README.md.
-#                           Never shared across VMs.
+# Substitute before use — one rendered file for every VM, see setup/README.md:
+#   __VM_PASSWORD__         four random words, SHARED by every VM on purpose. It goes
+#                           on the projector; the security group is what protects
+#                           these boxes, not password uniqueness.
+#
+# No hostname here: Nectar sets it from the instance name, so launching 24 at once
+# with a count gives ws-1 … ws-24 without rendering 24 files.
 #
 # No Claude credentials here. Each attendee signs in with /login using one of the
 # workshop subscription accounts, handed out on their card — a baked-in
@@ -15,7 +18,6 @@
 #
 # Never commit a rendered copy. Placeholders only in git.
 
-hostname: __HOSTNAME__
 timezone: Australia/Adelaide
 locale: en_AU.UTF-8
 
@@ -23,7 +25,7 @@ locale: en_AU.UTF-8
 # or emailing thirty private ones, and neither survives contact with a room.
 # This writes /etc/ssh/sshd_config.d/50-cloud-init.conf, which beats the image
 # default of PasswordAuthentication no. Pair it with a source-IP restriction in
-# your cloud's inbound firewall rules — see setup/README.md.
+# the security group — see setup/README.md.
 ssh_pwauth: true
 chpasswd:
   expire: false            # no forced change at first login; there is no time
