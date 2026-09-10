@@ -6,39 +6,42 @@ log in as `ubuntu` over SSH with a password and do everything in that account.
 Two files:
 
 - **`provision.sh`** — everything identical on every VM. Run it as root.
-- **`cloud-init.yaml`** — only what differs per attendee: hostname, password,
-  API key.
+- **`cloud-init.yaml`** — only what differs per attendee: hostname and password.
+  No Claude credentials: attendees sign in themselves with one of the workshop
+  subscription accounts.
 
 ## The build
 
-Golden image, not per-VM provisioning. The deciding reason is step 3: Claude
-Code's first run asks about theme and trusting the directory, that state lives
-in the home directory, and no amount of cloud-init can answer an interactive
-prompt. Thirty people meeting it at 0:02 is thirty people who are not doing the
-exercise.
+Golden image, not per-VM provisioning. The reason is time: a cold build is 30–40
+minutes of apt, R packages and a 3 GB genome, and thirty VMs doing that
+simultaneously at 0:00 is thirty people watching a progress bar. Build once,
+clone the result.
+
+The image ships **signed out of everything** — no Claude login, no `gh` token, no
+git identity. Attendees do their own `/login` and their own theme prompt; it is
+their machine for the afternoon, and the alternative is baking one person's
+credentials into every VM.
 
 ```bash
 # 1. one master VM from the stock Ubuntu 26.04 image, then:
 sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/SACGF/ai_agent_workshop/main/setup/provision.sh)"
 
-# 2. verify, with a real key in the environment
-ANTHROPIC_API_KEY=sk-... workshop-doctor        # every line must say ok
+# 2. verify
+workshop-doctor                                 # every line must say ok
 
-# 3. the interactive bit — accept the theme and trust prompts, then quit
-claude
-
-# 4. strip what verifying the VM left behind, then snapshot without reconnecting
+# 3. strip what verifying the VM left behind
 sudo workshop-presnapshot
 
-# 5. snapshot the VM. That snapshot is what you clone thirty times.
+# 4. snapshot the VM, without reconnecting first. That snapshot is what you clone.
 ```
 
-`workshop-presnapshot` is not optional hygiene. Verifying a master VM means logging
-in to things, and a snapshot copies every one of those logins thirty times: your `gh`
+`workshop-presnapshot` is not optional hygiene. Verifying a master VM means logging in
+to things, and a snapshot copies every one of those logins to every clone: your `gh`
 token with `repo` scope, your git identity on everybody's commits, any Claude account
-you signed in to. It also clears `machine-id` and the SSH host keys, which clones
-otherwise share. It deliberately keeps `~/.claude.json` — the theme and trust answers
-are the whole reason for a golden image — and strips only the credentials beside them.
+you signed in to. It removes `~/.claude`, `~/.claude.json`, `~/.config/gh` and
+`~/.gitconfig` outright, clears `machine-id`, and deletes the SSH host keys that clones
+would otherwise share. Then it audits itself and greps for leftover credential
+material, because "I think I logged out" is not a check.
 
 Better still, don't create the problem: rehearse `gh auth login` and `/remote-control`
 on a throwaway clone or your own laptop, never on the master.
@@ -146,8 +149,8 @@ told "the data directory" will pick the wrong one. `/data/README.md` says which
 is which, and so does the repo README.
 
 The repo has to be public for this — attendees fork it, and forking needs read
-access. That also makes the `curl | bash` above work without auth. Keep secrets
-out of it: the API key and passwords are rendered per VM below, never committed.
+access. That also makes the `curl | bash` above work without auth. Keep secrets out of
+it: passwords and account credentials are rendered per VM below, never committed.
 
 ## Per-VM
 
@@ -158,17 +161,15 @@ IP is the only field that works the other way around.
 
 ### 1. Render one cloud-init per attendee
 
-Before any VM exists. Write the output somewhere outside the repo — it contains a
-live API key and a password.
+Before any VM exists. Write the output somewhere outside the repo — it contains a live
+password.
 
 ```bash
 out=~/workshop-vms; mkdir -p "$out"; chmod 700 "$out"
 for i in $(seq -w 1 30); do
   pw=$(grep -xE '[a-z]{3,7}' /usr/share/dict/words | shuf -n4 | paste -sd- -)
-  key=$(sed -n "${i}p" ~/workshop-keys.txt)      # one API key per line
   sed -e "s/__HOSTNAME__/ws-$i/" \
       -e "s/__VM_PASSWORD__/$pw/" \
-      -e "s|__ANTHROPIC_API_KEY__|$key|" \
       setup/cloud-init.yaml > "$out/ws-$i.yaml"
   echo "ws-$i,$pw" >> "$out/cards.csv"
 done
@@ -205,12 +206,14 @@ join -t, <(sort ips.csv) <(sort "$out/cards.csv") > "$out/cards-final.csv"
 ```
 
 That file is the mail merge, and a spreadsheet is a perfectly good way to drive it.
-Each card carries four lines and nothing else:
+Each card carries both logins the attendee needs, and nothing else:
 
 ```
-  ws-07
-  ssh ubuntu@203.0.113.17
-  cobra-mantle-drift-pony
+  ws-07     ssh ubuntu@203.0.113.17
+            cobra-mantle-drift-pony
+
+  Claude    workshop-07@example.org
+            <that account's password>
 
   First thing you type after logging in:  tmux
 ```
@@ -222,6 +225,31 @@ work.
 
 If your cloud hands out predictable DNS names, use those on the card instead and
 skip the join entirely.
+
+### The Claude accounts
+
+One workshop subscription account per attendee, `/login` on their own VM. Worth the
+handling rather than a baked-in credential: a `CLAUDE_CODE_OAUTH_TOKEN` from
+`claude setup-token` authenticates model requests but **cannot establish a Remote
+Control session**, and API keys can't either. Only a real `/login` does both, and
+Remote Control is the 1:45 exercise.
+
+So `/login` happens once per VM. The only question is who does it:
+
+- **Attendees log in at 0:05.** One more browser step in a block that already has two.
+  Test the flow end to end on one account first: if signing in needs an emailed
+  verification code, the attendee has to be able to read that mailbox, and two dozen
+  people waiting on you to relay codes is the worst five minutes of the day.
+- **You log in on each clone beforehand** — recommended if those accounts use emailed
+  codes. Fold it into the clone-and-verify pass: boot, `claude`, `/login`, quit. Two
+  dozen browser flows is dull, but it is dull *the day before*, and attendees start at
+  a working prompt. The credential lands in `~/.claude/.credentials.json` on a VM the
+  attendee has root on, which is fine for a disposable account you delete afterwards —
+  and it is exactly why `workshop-presnapshot` runs *before* the snapshot, never after
+  these logins.
+
+Either way the account and its password go on the card, because `/login` asks again if
+a session is lost.
 
 ## Passwords, and why they are fine here
 
@@ -261,12 +289,19 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
 - [ ] **R binaries or source?** `provision.sh` probes p3m.dev for this release's
       codename and falls back to building from source. Watch that line go past —
       the fallback works but turns a two-minute step into fifteen.
-- [ ] **`/remote-control` from your own account**, for the 1:45 balcony break. It
-      needs a Pro/Max/Team/Enterprise login and **does not work with API keys**, so
-      the workshop key on each VM cannot drive it. Test the demo you will give from
-      the front (`unset ANTHROPIC_API_KEY`, `claude`, `/login`, `/remote-control`,
-      scan the QR with your phone), and check there is usable signal wherever you
-      send the room for air. Nothing later in the agenda depends on it.
+- [ ] **`/remote-control` end to end on a workshop account**, for the 1:45 balcony
+      break — `claude`, `/login`, `/remote-control`, scan the QR with your phone.
+      Everyone is on a subscription login now, so this works for the whole room and is
+      a real exercise rather than a demo. Check there is usable signal wherever you
+      send people for air.
+- [ ] **One workshop Claude account, signed in from a clean clone.** Whether that
+      login wants a password or an emailed code decides who does the two dozen
+      `/login`s — see *The Claude accounts* above. Find out before the day, not at
+      0:05.
+- [ ] **Plan limits.** Each account has its own session limit, and the 0:55 block runs
+      three agents at once on purpose. Know what plan these accounts are on, tell the
+      room to plan on the strong model and execute on the cheap one, and point at
+      `/usage` so people can see a limit coming rather than hitting it.
 - [ ] **The warm-up runs on the image.** Both halves of the 0:15 exercise, since it
       is the first thing thirty people do at once:
       ```bash
@@ -286,7 +321,6 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
       so having them click it a day early surfaces SSO and repo-creation problems
       before 0:05 rather than during it. Forking early costs them nothing — forks
       don't copy issues either way.
-- [ ] Per-key spend caps set, one key per VM.
 - [ ] 2–3 spare VMs powered on. There is no rebuild time in a 3.5-hour session,
       so recovery has to be "here is a new IP".
 - [ ] Dry-run the full agenda on a clone of the snapshot.

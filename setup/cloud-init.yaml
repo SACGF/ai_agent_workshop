@@ -7,8 +7,11 @@
 #   __HOSTNAME__            e.g. ws-07
 #   __VM_PASSWORD__         per-VM, four random words (~55 bits). See setup/README.md.
 #                           Never shared across VMs.
-#   __ANTHROPIC_API_KEY__   per-VM key, so spend caps bite individually and the
-#                           wrap-up "what your afternoon cost" is per-person.
+#
+# No Claude credentials here. Each attendee signs in with /login using one of the
+# workshop subscription accounts, handed out on their card — a baked-in
+# CLAUDE_CODE_OAUTH_TOKEN would authenticate model requests but cannot establish a
+# Remote Control session, and that is the 1:45 exercise.
 #
 # Never commit a rendered copy. Placeholders only in git.
 
@@ -28,13 +31,6 @@ chpasswd:
     - name: ubuntu
       password: __VM_PASSWORD__
       type: text
-
-write_files:
-  # Sourced by /etc/profile.d/99-workshop.sh, which provision.sh installs.
-  - path: /etc/workshop-api-key
-    permissions: '0644'
-    content: |
-      export ANTHROPIC_API_KEY="__ANTHROPIC_API_KEY__"
 
 runcmd:
   # No-op on a snapshot that already ran provision.sh. On a bare Ubuntu image

@@ -29,11 +29,13 @@ gh auth login            # say yes to "Authenticate Git with your GitHub credent
 workshop-git-identity    # your git name and email, read back off GitHub
 ```
 
+Then start `claude`, pick a theme, and `/login` with the Claude account on your card.
+
 > Check this machine is ready for a workshop that uses Claude Code, `gh` and
 > `bedtools`. Verify `gh auth status`, `bedtools --version`, `git config --global
-> user.email`, and that `ANTHROPIC_API_KEY` is set — check it's non-empty without
-> printing it. Report pass/fail for each. For anything that fails, give me the exact
-> command to type myself; don't try to fix it.
+> user.email`, plus `bcftools`, `samtools`, `Rscript` and `python3`. Report pass/fail
+> for each. For anything that fails, give me the exact command to type myself; don't
+> try to fix it.
 
 > I've already forked `SACGF/ai_agent_workshop` in the browser. Find it under my
 > account and clone it to `~/ai_agent_workshop`, with `origin` pointing at my fork and
@@ -141,9 +143,8 @@ Then switch models — plan with the strong one, execute with the cheap one:
 
 ## 1:45 — Before you go outside
 
-Something longer than the break, then `/remote-control` and out the door. Remote
-Control needs a Pro/Max login — `unset ANTHROPIC_API_KEY`, then `/login` — see the
-README's 1:45 block.
+Something longer than the break, then `/remote-control` and out the door. It works
+because you signed in with `/login` at setup — see the README's 1:45 block.
 
 > Read SPEC.md and tests/README.md, then write golden tests for every subcommand I
 > have so far, diffing against real bedtools on data/a.bed and data/b.bed. Cover the

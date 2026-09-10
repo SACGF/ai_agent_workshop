@@ -54,12 +54,17 @@ gh auth login            # browser on your laptop, code from this terminal.
                          #   credentials" — without it, git push has no password.
 workshop-git-identity    # sets your git name and email from your GitHub account
 claude --version         # must print a version — everything below depends on it
-claude                   # start it, from anywhere
+claude                   # start it, then /login with the Claude account on your card
 ```
 
 `gh auth login` needs a browser you are sitting in front of, and an unset git identity
 doesn't fail until your first commit twenty minutes from now — so get both out of the
 way while nothing depends on them.
+
+Your card also has a **Claude account**. On first run, pick a theme, then `/login` and
+sign in with it — the VM ships signed out, because it's your machine for the afternoon
+and nobody else's credentials belong on it. Keep the card: if a session is lost,
+`/login` asks again.
 
 **If your GitHub account is locked down**, the three places it bites, in order:
 
@@ -72,10 +77,12 @@ way while nothing depends on them.
 Then, in Claude Code:
 
 > Check this machine is ready for a workshop that uses Claude Code, `gh` and
-> `bedtools`. Verify `gh auth status`, `bedtools --version`, `git config --global
-> user.email`, and that `ANTHROPIC_API_KEY` is set — check it's non-empty without
-> printing it. Report pass/fail for each. For anything that fails, give me the exact
-> command to type myself; don't try to fix it.
+> `bedtools`. Verify `gh auth status`, `bedtools --version`, `bcftools --version`,
+> `samtools --version`, `Rscript --version`, `python3 --version` and `git config
+> --global user.email`. Report pass/fail for each. For anything that fails, give me the
+> exact command to type myself; don't try to fix it.
+
+(No need to check your Claude login — you're talking to it.)
 
 Now have it clone the fork you made:
 
@@ -311,16 +318,9 @@ a QR code. Scan it — install the app first,
 [Android](https://play.google.com/store/apps/details?id=com.anthropic.claude) — and
 the conversation is in your hand, live, with your VM behind it.
 
-**One catch, and you need it before you try.** Remote Control needs a Claude Pro, Max,
-Team or Enterprise login. **API keys are not supported**, and your VM runs on a
-workshop API key, so out of the box `/remote-control` will refuse.
-
-- **If you have a Pro or Max subscription**, in the shell you start `claude` from:
-  `unset ANTHROPIC_API_KEY`, then `claude`, then `/login`, then `/remote-control`.
-  That session now bills to your personal subscription rather than the workshop key,
-  which also means it won't appear in the 3:20 cost tally. Worth it once, to see it.
-- **If you don't**, it's demoed from the front, and nothing later in the day depends
-  on it. Take the break.
+This works because you signed in with `/login` at setup — Remote Control needs a real
+subscription login, and neither an API key nor a `setup-token` can establish one. It is
+the one thing the workshop accounts buy you that a key would not.
 
 `tmux` is what makes any of this safe: walking out of wifi range kills your SSH
 connection, not your session. If you skipped it at login, start it now and re-run your
@@ -477,8 +477,16 @@ survive a 6-inch screen.
 
 ### 3:20–3:30 · Wrap-up
 
-What your afternoon cost: [platform.claude.com/usage](https://platform.claude.com/usage),
-and `/usage` in any session still open. Worth seeing the number next to what you built.
+What your afternoon cost, in any session still open:
+
+```
+/usage
+```
+
+The session block is tokens and an estimated dollar figure for *that* conversation; the
+plan bars above it are how much of the account's allowance the afternoon actually ate.
+Worth seeing both next to what you built — and worth noting which of the two you'd
+watch if you did this every day.
 
 ---
 
@@ -496,7 +504,7 @@ and `/usage` in any session still open. Worth seeing the number next to what you
 | **`#`** | Prefix a message to save it to `CLAUDE.md` as a standing instruction. |
 | **`/init`** | Generate a `CLAUDE.md` for an existing codebase. |
 | **`claude -p "..."`** | One-shot, non-interactive. Pipes and scripts. |
-| **`/remote-control`** | Hand the session to your phone. Needs a Pro/Max login — see the 1:45 break. |
+| **`/remote-control`** | Hand the session to your phone. See the 1:45 break. |
 
 **`CLAUDE.md`** — yours came from `specs/CLAUDE.md.example` at setup. Anything you'd
 otherwise retype goes in it. Add with `#`, or just edit the file.
@@ -512,9 +520,11 @@ turn caught in three minutes costs a `git checkout`.
 touching `gh`, and read the `--repo` in what comes back.
 
 **`/usage` resets on `/clear`.** The session figure is what that conversation cost, not
-what your afternoon cost — the console number at 3:20 is the total. Check `/usage`
-after a long parallel run anyway: three agents on Opus is a different number from one
-on Sonnet, and seeing it once is how the habit of `/model` sticks.
+what your afternoon cost — the plan bars above it are the running total. Check it after
+a long parallel run: three agents on Opus is a different number from one on Sonnet, and
+seeing it once is how the habit of `/model` sticks. Your account has its own session
+limit, and the 0:55 block deliberately runs several agents at once, so this is also how
+you see a limit coming instead of hitting it.
 
 ---
 

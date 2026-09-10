@@ -6,8 +6,9 @@
 #   sudo bash setup/provision.sh
 #   sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/SACGF/ai_agent_workshop/main/setup/provision.sh)"
 #
-# Idempotent — re-run it after editing. Installs no secrets: the per-VM API key
-# and password are cloud-init's job (setup/cloud-init.yaml).
+# Idempotent — re-run it after editing. Installs no secrets and no logins: the
+# per-VM password is cloud-init's job (setup/cloud-init.yaml), and each attendee
+# signs in to Claude Code themselves with /login on the day.
 set -euo pipefail
 
 WORKSHOP_USER=${WORKSHOP_USER:-ubuntu}
@@ -35,13 +36,19 @@ EOF
 
 say "Installing packages"
 apt-get update
-apt-get install -y --no-install-recommends \
+apt-get install -y --no-install-recommends --no-upgrade \
   bedtools bcftools samtools tabix \
   tmux git openssh-client patch curl jq less \
   build-essential python3-venv python3-dev \
   rustc cargo \
   ca-certificates gnupg wget unzip vim nano tree ripgrep htop
-#  ^ --no-install-recommends because bedtools Recommends python3-pybedtools,
+#  ^ --no-upgrade so a re-run installs what is missing and touches nothing else.
+#    Without it, naming a package that is already present but upgradable upgrades
+#    it — openssh-client pulls in openssh-server, restarts sshd and triggers ufw
+#    mid-session, which looks exactly like a hang on an idempotent re-run. These
+#    VMs live for one afternoon; presence is the requirement, currency is not.
+#
+#    --no-install-recommends because bedtools Recommends python3-pybedtools,
 #    which drags in gffutils, biopython, matplotlib, reportlab, python3-tk and
 #    ncbi-blast+ — and bcftools Recommends matplotlib again for plot-vcfstats.
 #    Several hundred MB on every image for things no exercise touches. The
@@ -112,8 +119,6 @@ cat > /etc/profile.d/99-workshop.sh <<'EOF'
 # existed at login, which it did not on first boot.
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
 export PATH
-# ANTHROPIC_API_KEY is written per-VM by cloud-init, not baked into the image.
-[ -r /etc/workshop-api-key ] && . /etc/workshop-api-key
 EOF
 
 git config --system init.defaultBranch main
@@ -158,10 +163,14 @@ check python3  python3 --version
 check tabix    tabix --version;     check ssh      ssh -V
 check Rscript  Rscript --version
 check "R pkgs" Rscript -e 'invisible(lapply(c("optparse","data.table","testthat","lintr","jsonlite","httr2","plumber"), library, character.only=TRUE)); cat("all seven load\n")'
-if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "ok   ANTHROPIC_API_KEY    set (${#ANTHROPIC_API_KEY} chars)"
+# Claude auth is per-attendee: each person signs in with /login using their own
+# workshop account. The image ships signed out on purpose, so a login found here
+# is the organiser's and must not reach the snapshot.
+cred="$(getent passwd "${WORKSHOP_USER:-ubuntu}" | cut -d: -f6)/.claude/.credentials.json"
+if [ -s "$cred" ]; then
+  echo "WARN Claude login        present — run workshop-presnapshot before snapshotting"
 else
-  echo "FAIL ANTHROPIC_API_KEY    empty"; fail=1
+  echo "ok   Claude login        absent, as it should be on the image"
 fi
 # Egress: an agent hitting a blocked endpoint looks exactly like a bug.
 for url in https://api.anthropic.com https://github.com https://cdotlib.org; do
@@ -222,17 +231,13 @@ echo "== Credentials"
 # gh token (repo scope), git identity, and any Claude OAuth login. The theme and
 # trust answers in ~/.claude.json are deliberately KEPT — they are the whole
 # reason for a golden image. Only the credentials go.
-rm -rf "$h/.config/gh" "$h/.gitconfig" "$h/.claude/.credentials.json"
-if [ -f "$h/.claude.json" ] && command -v jq >/dev/null; then
-  tmp=$(mktemp) && jq 'del(.oauthAccount)' "$h/.claude.json" > "$tmp" \
-    && mv "$tmp" "$h/.claude.json" && chown "$u:$u" "$h/.claude.json"
-fi
-rm -f /etc/workshop-api-key        # cloud-init writes the real one per VM
+# All of it: the image ships signed out of everything. Attendees do their own
+# /login and their own theme prompt — it is their machine for the afternoon.
+rm -rf "$h/.config/gh" "$h/.gitconfig" "$h/.claude" "$h/.claude.json"
 
 echo "== History and scratch"
 rm -f  "$h/.bash_history" "$h/.lesshst" "$h/.viminfo" "$h/provision.log"
-rm -rf "$h/.claude/projects" "$h/.claude/todos" "$h/.claude/usage-data"
-rm -rf /root/.bash_history /tmp/* /var/tmp/* 2>/dev/null
+rm -rf /root/.bash_history /root/.claude /root/.claude.json /tmp/* /var/tmp/* 2>/dev/null
 journalctl --rotate --vacuum-time=1s >/dev/null 2>&1
 
 echo "== Machine identity"
@@ -241,10 +246,10 @@ truncate -s 0 /etc/machine-id; rm -f /var/lib/dbus/machine-id
 cloud-init clean --logs >/dev/null 2>&1 || true   # so each clone runs its own per-instance config
 
 echo "== Audit — these must all be absent or empty"
-for f in "$h/.config/gh" "$h/.gitconfig" "$h/.claude/.credentials.json" /etc/workshop-api-key; do
+for f in "$h/.config/gh" "$h/.gitconfig" "$h/.claude" "$h/.claude.json"; do
   [ -e "$f" ] && echo "  STILL PRESENT: $f" || echo "  gone: $f"
 done
-grep -rl 'sk-ant' "$h" /etc 2>/dev/null | head && echo "  ^ API key material found — remove before snapshotting"
+grep -rl 'sk-ant' "$h" /etc 2>/dev/null | head && echo "  ^ credential material found — remove before snapshotting"
 
 echo "== SSH host keys (last, on purpose)"
 # Thirty VMs sharing a host key means any one of them can impersonate the others.
@@ -447,15 +452,14 @@ df -h / | tail -1
 
 say "Done. Next:"
 cat <<EOF
-  1. su - $WORKSHOP_USER, run 'claude' once, complete the theme and trust
-     prompts. That state lives in the home directory and is the one thing
-     cloud-init cannot do for you — do it before you snapshot.
-  2. ANTHROPIC_API_KEY=sk-... workshop-doctor    # expect all ok
-  3. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
+  1. workshop-doctor                             # expect all ok
+     The image ships signed out of Claude and gh. Attendees do their own
+     /login and their own theme prompt — it is their machine.
+  2. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
      Know the real numbers before you size the attendee VMs.
-  4. sudo workshop-presnapshot
+  3. sudo workshop-presnapshot
      Strips what verifying this VM left behind — your gh token, git
      identity, any Claude login, machine-id, SSH host keys. A snapshot
      turns one organiser's credentials into thirty attendees'.
-  5. Snapshot this VM, without reconnecting to it first.
+  4. Snapshot this VM, without reconnecting to it first.
 EOF
