@@ -37,14 +37,7 @@ does everything after them.
 
 **First, fork this repo in your browser.**
 [github.com/SACGF/ai_agent_workshop](https://github.com/SACGF/ai_agent_workshop) →
-**Fork** → **Create fork**. Keep the default name. Ten seconds.
-
-Do this yourself rather than asking the agent to run `gh repo fork`. Forking is the
-step a restricted GitHub account fails at — SSO-protected org, a fine-grained token
-with no repo-creation rights, a policy against new public repos — and it fails before
-anything else can work. In a browser you find out in one click and can switch to a
-personal account; through the agent you get a 403 that it will cheerfully try three
-ways around while your twenty minutes go.
+**Fork** → **Create fork**. Keep the default name
 
 **Then, on the VM:**
 
