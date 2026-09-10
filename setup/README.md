@@ -228,6 +228,27 @@ making all of them pull from apt and GitHub simultaneously.
 Boot check: `cloud-init status --wait` on one VM, or the marker file
 `/var/lib/cloud/workshop-ready`.
 
+#### Or bake the password in and skip user-data entirely
+
+If you would rather not paste a customisation script at all, set the password on the
+master before `workshop-presnapshot` and let the snapshot carry it:
+
+```bash
+echo 'ubuntu:<the password>' | sudo chpasswd
+printf 'PasswordAuthentication yes\n' | sudo tee /etc/ssh/sshd_config.d/00-workshop.conf
+sudo systemctl restart ssh
+sudo sshd -T | grep -i '^passwordauthentication'     # want: yes
+```
+
+`00-` is not cosmetic: sshd takes the **first** value it finds in `sshd_config.d`, and
+the Ubuntu cloud image ships `60-cloudimg-settings.conf` saying `no`.
+
+**Verify this on one clone before launching the rest.** A clone boots with a fresh
+instance-id, so cloud-init re-runs its per-instance user module, whose default for the
+distro user is `lock_passwd: true` — it may re-lock the password you baked in. If the
+login works on that one VM, this is the least-moving-parts option; if it doesn't, pass
+the user-data above, which sets the password positively on every boot.
+
 ### 4. Collect the IPs and print the cards
 
 ```bash
