@@ -47,7 +47,7 @@ confidently misdiagnose while its attendee loses twenty minutes.
 
 Where the disk goes: the reference genome is **~3.1 GB unpacked**, not the ~1 GB
 you see published — that figure is the gzip, and bedtools needs it uncompressed.
-Ubuntu plus the toolchain (R and its packages, rustc, go, uv's Python) is a few
+Ubuntu plus the toolchain (R and its packages, rustc, uv's Python) is a few
 GB more. 30 GB leaves real headroom for cargo target directories, venvs and
 whatever an attendee's agent decides to install.
 
@@ -57,7 +57,7 @@ and loses nothing the repo needs — those are the only contigs the fixtures wan
 `complement` still work on every contig. Measure before you commit to a size:
 
 ```bash
-df -h /; du -sh /data /usr/lib/R /usr/lib/go-* 2>/dev/null
+df -h /; du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
 ```
 
 ### Aligned reads
@@ -89,8 +89,11 @@ fixtures line up.
 - **Python** via uv, with 3.13 and pytest pre-warmed. Ubuntu is PEP 668
   externally-managed, so `pip install` fails with a wall of text — agents reach
   for pip by default, and `uv` is the answer.
-- **rustc, cargo, go** so "implement it in a language you don't know" starts in
-  seconds instead of after a toolchain download.
+- **rustc, cargo** — Rust is the language `prompts.md` names, and a rustup
+  download mid-exercise wastes five minutes. Go, Julia and the rest are
+  deliberately absent: that list has no end, each costs ~1 GB on every image,
+  and an attendee's agent can `apt install` one in a minute on the single box
+  that wants it.
 - **`/data`** — GRCh38 primary assembly from GENCODE v50, the same release
   `data/genes.gtf` came from, so contig names and coordinates agree. With
   `.fai` and a `chrom.sizes` for `bedtools slop`/`complement`/`shuffle -g`, and

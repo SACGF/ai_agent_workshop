@@ -39,13 +39,18 @@ apt-get install -y \
   bedtools bcftools samtools tabix \
   tmux git curl jq less \
   build-essential python3-venv python3-dev \
-  rustc cargo golang-go \
+  rustc cargo \
   ca-certificates gnupg wget unzip vim nano tree ripgrep htop
 #  ^ bedtools is the oracle for every golden test; bcftools backs the "it parsed
 #    and exited 0" contrast in issues/04; tmux is named verbatim in the
-#    parallel-agents prompt; less is in the ROT13 answer-key one-liner; rustc,
-#    cargo and go are so the "language you don't know" stretch goal starts in
-#    seconds rather than after a rustup download.
+#    parallel-agents prompt; less is in the ROT13 answer-key one-liner; rustc and
+#    cargo because Rust is the language prompts.md actually names, and a rustup
+#    download mid-exercise is a bad way to spend five minutes.
+#
+#    Deliberately NOT here: Go, Julia, and everything else the "language you
+#    don't know" goal might reach for. That list has no end, each one costs
+#    ~1 GB of every image, and attendees have passwordless sudo — an agent asked
+#    for Go installs it in a minute, on the one box that wants it.
 
 say "Installing R"
 # A lot of this room is R-first. testthat and lintr cover the unit-test and
@@ -140,7 +145,7 @@ check samtools samtools --version;  check gh       gh --version
 check git      git --version;       check tmux     tmux -V
 check jq       jq --version;        check uv       uv --version
 check claude   claude --version;    check rustc    rustc --version
-check go       go version;          check python3  python3 --version
+check python3  python3 --version
 check Rscript  Rscript --version
 check "R pkgs" Rscript -e 'invisible(lapply(c("optparse","data.table","testthat","lintr","jsonlite","httr2","plumber"), library, character.only=TRUE)); cat("all seven load\n")'
 if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
@@ -388,7 +393,7 @@ cat <<EOF
      prompts. That state lives in the home directory and is the one thing
      cloud-init cannot do for you — do it before you snapshot.
   2. ANTHROPIC_API_KEY=sk-... workshop-doctor    # expect all ok
-  3. df -h /   and   du -sh /data /usr/lib/go-* /usr/lib/rustlib 2>/dev/null
+  3. df -h /   and   du -sh /data /usr/lib/R /usr/lib/rustlib 2>/dev/null
      Know the real numbers before you size the attendee VMs.
   4. Snapshot this VM.
 EOF
