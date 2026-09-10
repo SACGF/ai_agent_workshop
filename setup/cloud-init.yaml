@@ -23,7 +23,7 @@ locale: en_AU.UTF-8
 # or emailing thirty private ones, and neither survives contact with a room.
 # This writes /etc/ssh/sshd_config.d/50-cloud-init.conf, which beats the image
 # default of PasswordAuthentication no. Pair it with a source-IP restriction in
-# the security group — see setup/README.md.
+# your cloud's inbound firewall rules — see setup/README.md.
 ssh_pwauth: true
 chpasswd:
   expire: false            # no forced change at first login; there is no time

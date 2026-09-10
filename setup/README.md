@@ -196,9 +196,9 @@ Boot check: `cloud-init status --wait` on the VM, or the marker file
 
 ### 3. Join the IPs, then print
 
-Export `host,ip` from whatever console or CLI your cloud gives you — `openstack
-server list -f csv -c Name -c Networks`, `aws ec2 describe-instances`, the web
-console's CSV download, all fine — then join on the hostname:
+Get `host,ip` out of your cloud however it offers it — a CSV download from the
+console, its CLI, or typing twenty-four lines by hand — as `ips.csv`, then join on the
+hostname:
 
 ```bash
 join -t, <(sort ips.csv) <(sort "$out/cards.csv") > "$out/cards-final.csv"
@@ -257,8 +257,8 @@ a session is lost.
   brute-forced continuously; a weak or shared password is a miner on your cloud
   bill inside the hour. Four words from a 25k wordlist is not falling in 3.5
   hours, or in 3.5 years.
-- **Restrict SSH to the venue's public IP** in the security group if you can get
-  it. Then none of the above matters.
+- **Restrict SSH to the venue's public IP** in whatever your cloud calls its inbound
+  firewall rules, if you can get the venue's IP. Then none of the above matters.
 - **Open 8000 inbound** as well, or the volunteer gene-server stretch goal
   produces a URL nobody in the room can reach.
 - Delete the VMs at the end. That is the actual security control.
