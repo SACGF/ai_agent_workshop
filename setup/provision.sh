@@ -315,21 +315,21 @@ EOF
   chmod 0444 "$GENOME_DIR"/* 2>/dev/null || true
 fi
 
-say "Aligned reads (opt-in)"
-# WITH_BAM=1 slices a public GIAB HG002 BAM down to exactly the four gene
-# neighbourhoods in data/genes.gtf, giving ~2 Mb of real aligned reads that line
-# up with the fixtures. Makes `bedtools coverage -a data/genes.bed -b` and
-# genomecov mean something. Off by default: it adds several minutes to the build
-# and nothing in the agenda needs it.
+say "Aligned reads"
+# Slices a public GIAB HG002 BAM down to exactly the four gene neighbourhoods in
+# data/genes.gtf — TP53, BRCA1, EGFR, CFTR. Measured at ~70x depth, that is
+# about 95 MB and half a million reads, which is the point: `bedtools bamtobed`
+# turns it into a BED of ~500,000 intervals, next to fixtures of twenty. That is
+# the fixture that makes the spec's memory-model decision real.
 #
-# The source is 122 GB, so we never download it — samtools fetches the .bai and
-# range-requests only the regions we ask for.
+# The source is 122 GB and is never downloaded — samtools fetches the .bai and
+# range-requests only the regions we ask for. Set SKIP_BAM=1 to leave it out.
 BAM_URL=${BAM_URL:-https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/HG002_NA24385_son/NIST_Illumina_2x250bps/novoalign_bams/HG002.GRCh38.2x250.bam}
 # Neighbourhood spans, from: bedtools merge -d 1000000 on the gene rows of
 # data/genes.gtf. TP53, BRCA1, EGFR, CFTR.
 BAM_REGIONS=${BAM_REGIONS:-"chr7:54721724-55595006 chr7:117262918-117883675 chr17:7591230-7833742 chr17:42998265-43305397"}
-if [ -z "${WITH_BAM:-}" ]; then
-  echo "WITH_BAM unset — skipping. Set WITH_BAM=1 to include aligned reads."
+if [ -n "${SKIP_BAM:-}" ]; then
+  echo "SKIP_BAM set — skipping"
 elif [ -s "$GENOME_DIR/HG002.neighbourhoods.bam.bai" ]; then
   echo "already present"
 else

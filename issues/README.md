@@ -23,12 +23,16 @@ gh issue create --repo "$FORK" \
   --body-file issues/03-golden-tests-and-ci.md
 ```
 
-The fourth is a stretch goal — file it too if you want it on the board:
+The last two are stretch goals — file them too if you want them on the board:
 
 ```bash
 gh issue create --repo "$FORK" \
   --title "Stretch: find why this VCF is out of spec" \
   --body-file issues/04-vcf-forensics.md
+
+gh issue create --repo "$FORK" \
+  --title "Stretch: does it survive real data?" \
+  --body-file issues/05-real-data-scale.md
 ```
 
 Check with `gh issue list --repo "$FORK"`.

@@ -60,18 +60,24 @@ and loses nothing the repo needs — those are the only contigs the fixtures wan
 df -h /; du -sh /data /usr/lib/R /usr/lib/go-* 2>/dev/null
 ```
 
-### Aligned reads, optionally
+### Aligned reads
 
-`WITH_BAM=1` slices a public GIAB HG002 BAM (Illumina 2x250, GRCh38) down to the
-same four gene neighbourhoods as `data/genes.gtf`, giving ~2 Mb of real aligned
-reads that line up with the fixtures — enough for `bedtools coverage -a
-data/genes.bed -b` and `genomecov` to mean something. The source file is 122 GB
-and is never downloaded: samtools pulls the index and range-requests only those
-regions, so it costs a few hundred MB and several minutes.
+`provision.sh` slices a public GIAB HG002 BAM (Illumina 2x250, GRCh38) down to
+the same four gene neighbourhoods as `data/genes.gtf`. Measured at ~70x depth
+that is **~95 MB and roughly half a million reads** — and the read count is the
+point. `bedtools bamtobed` turns it into a BED of ~500,000 intervals, against
+fixtures of twenty, which is the only thing on the VM that makes `SPEC.md`'s
+streaming-versus-in-memory decision testable. `issues/05-real-data-scale.md` is
+built on it.
 
-Off by default, because nothing in the agenda needs it. If you turn it on, the
-script checks the remote header for `SN:chr17` first — a contig-naming mismatch
-would otherwise hand you an empty BAM with no error at all.
+The source file is 122 GB and is never downloaded: samtools pulls the index and
+range-requests the four regions, a few minutes' work. `SKIP_BAM=1` leaves it out.
+
+The script checks the remote header for `SN:chr17` before slicing — a
+contig-naming mismatch would otherwise hand you a valid, empty BAM and no error
+at all. Verified against the source on 2026-09-10: it is the
+`GRCh38_full_plus_hs38d1_analysis_set_minus_alts` build, chr-prefixed, so the
+fixtures line up.
 
 ### What it puts on the image
 
@@ -87,7 +93,8 @@ would otherwise hand you an empty BAM with no error at all.
   seconds instead of after a toolchain download.
 - **`/data`** — GRCh38 primary assembly from GENCODE v50, the same release
   `data/genes.gtf` came from, so contig names and coordinates agree. With
-  `.fai` and a `chrom.sizes` for `bedtools slop`/`complement`/`shuffle -g`.
+  `.fai` and a `chrom.sizes` for `bedtools slop`/`complement`/`shuffle -g`, and
+  a ~95 MB slice of real GIAB HG002 reads over those same four neighbourhoods.
   Read-only (0444), because nobody has time to re-download 3 GB at 2 pm.
 
 `/data` versus the repo's `data/` is a collision waiting to happen — an agent
@@ -156,6 +163,8 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
       `bcftools view data/broken.vcf` exit-0 premise that `issues/04` is built
       on, all seven R packages loading, and `getfasta` returning real sequence
       rather than a run of Ns (which would mean the wrong assembly).
+- [ ] `bedtools bamtobed -i /data/HG002.neighbourhoods.bam | wc -l` — expect
+      roughly half a million. A few thousand means the slice missed.
 - [ ] **R binaries or source?** `provision.sh` probes p3m.dev for this release's
       codename and falls back to building from source. Watch that line go past —
       the fallback works but turns a two-minute step into fifteen.

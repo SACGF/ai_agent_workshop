@@ -50,8 +50,8 @@ Then pin it so it survives every `/clear`, using `#` from inside a session:
 > What is in this repository? Read the README and specs/, then tell me in five bullet
 > points what I am supposed to build today. Don't write any code.
 
-> Read `issues/` and file each of those three issues on my fork with `gh`. Show me the
-> commands before you run them.
+> Read `issues/` and file the three numbered 01-03 on my fork with `gh` — leave the
+> stretch ones for later. Show me the commands before you run them.
 
 Read the `--repo` in what it shows you. "Show me first" is the habit worth forming for
 anything that writes to the network.
@@ -210,6 +210,23 @@ Pick one. They're independent.
 
 > We found N. The answer key says there are 13. Don't read the key — instead, tell me
 > which categories of rule we haven't implemented at all yet.
+
+**Real reads, real scale**
+
+> `bedtools bamtobed -i /data/HG002.neighbourhoods.bam > reads.bed` gives me about
+> half a million intervals of real sequencing data. Run every golden test against it
+> instead of `data/a.bed`, time mine against real bedtools, and measure peak memory
+> with `/usr/bin/time -v`. Report the numbers before changing any code.
+
+Numbers first. The temptation is to start optimising on a hunch, and the hunch is
+usually wrong.
+
+> `intersect` is the one that got slower faster than the others. Is my implementation
+> quadratic? Show me the loop structure and what bedtools does instead, then fix it
+> without breaking a single golden test.
+
+> Update `SPEC.md`'s memory-model section to say what we actually do now. It currently
+> claims something we decided at 0:30 and never tested.
 
 **A language you don't know**
 

@@ -138,8 +138,8 @@ your issues.
 Forks don't copy issues, so yours has none right now. The issue texts are in
 [`issues/`](issues/) — have the agent re-file them:
 
-> Read `issues/` and file each of those three issues on my fork with `gh`. Show me the
-> commands before you run them.
+> Read `issues/` and file the three numbered 01-03 on my fork with `gh` — leave the
+> stretch ones for later. Show me the commands before you run them.
 
 That "show me first" habit is worth keeping for anything that writes to the network.
 Read the `--repo` flag in what it shows you.
@@ -314,6 +314,21 @@ Write a validator that finds them, with unit tests. This is the one exercise wit
 oracle — `bcftools` is a parser, not a validator, so the only way to know your checks
 are right is to test them directly. Score yourself against the ROT13'd answer key when
 you're done. Full brief in [`issues/04-vcf-forensics.md`](issues/04-vcf-forensics.md).
+
+**Real reads, real scale.** Everything you've tested against so far fits on one
+screen — deliberately, because that's what makes the golden tests checkable by eye.
+`/data/HG002.neighbourhoods.bam` is the other end: real GIAB HG002 reads over the same
+four neighbourhoods as `genes.gtf`, at ~70x. One command makes it something `mytools`
+already understands:
+
+```bash
+bedtools bamtobed -i /data/HG002.neighbourhoods.bam > reads.bed   # ~500,000 intervals
+```
+
+Then find out whether your `SPEC.md` was telling the truth about memory, and whether
+your `intersect` is quadratic. Being slower than bedtools is fine — it's C and you're
+not. Being *quadratic* is the finding. Full brief in
+[`issues/05-real-data-scale.md`](issues/05-real-data-scale.md).
 
 **Implement a subcommand in a language you don't know.** Rust, Go, Julia, whatever.
 The golden tests diff bytes against bedtools, so they transfer unchanged. You can't
@@ -490,7 +505,11 @@ lengths (`getfasta`, `nuc`, `slop -g`, `complement -g`). Same GENCODE release as
 
 ```bash
 bedtools getfasta -fi /data/GRCh38.fa -bed data/genes.bed -name | head
+bedtools bamtobed -i /data/HG002.neighbourhoods.bam | wc -l    # ~500,000
 ```
+
+`/data/HG002.neighbourhoods.bam` is real GIAB HG002 reads sliced to the four gene
+neighbourhoods in `genes.gtf`. `/data/README.md` on the VM has the details.
 
 Mind the two directories. `/data` is the reference genome, read-only. `data/` in this
 repo is the fixtures. If you say "the data directory" to an agent it will guess, so

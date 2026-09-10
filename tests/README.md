@@ -116,6 +116,24 @@ def test_matches_bedtools(name, args):
     assert got.stdout == want.stdout
 ```
 
+## Tests that travel, and tests that don't
+
+Everything above runs anywhere `bedtools` is installed, including GitHub's runners.
+That is why the fixtures are committed and small.
+
+Scale tests are the exception. `/data/HG002.neighbourhoods.bam` is on your VM and
+nowhere else — GitHub's runners have no `/data`, and a 25 MB BED does not belong in a
+template repo. So the test most likely to catch a quadratic `intersect` is also the
+one your CI cannot run, which is worth knowing rather than discovering later.
+
+Two honest responses, and you want both:
+
+- Say so in the suite. A scale test that skips with a clear message when `/data` is
+  absent is a test. One that silently passes is a lie.
+- Commit a small deterministic slice — `head -20000 reads.bed` is about 1 MB and runs
+  in CI in seconds. It won't catch everything the full file does, but it catches
+  quadratic, which is the failure that matters.
+
 ## Gotchas
 
 - **`merge` and `closest` need sorted input.** Sort into a temp file first; don't
