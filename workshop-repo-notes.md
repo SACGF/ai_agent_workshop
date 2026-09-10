@@ -70,7 +70,11 @@ interval logic. The API contract lives in the repo as an OpenAPI file.
 The single source of truth attendees keep open. Include:
 1. One-paragraph pitch of the day.
 2. Setup checklist (verify `claude` runs, `gh auth status`, `bedtools --version`,
-   fork this repo, clone your fork).
+   fork this repo, clone your fork). The fork is a **human browser click**, not
+   `gh repo fork` — a restricted GitHub account (SSO org, fine-grained token with
+   no repo-creation rights, policy against new public repos) fails at exactly that
+   step, and it should fail visibly in one click rather than as a 403 an agent
+   tries to route around. The agent clones the fork that already exists.
 3. The timed agenda (below), with each exercise as a section: goal, steps,
    pointer to the matching prompt in `prompts.md`, and a "done when" criterion.
 4. A short "Claude Code survival card": plan mode (Shift+Tab), Esc to interrupt,
@@ -79,7 +83,8 @@ The single source of truth attendees keep open. Include:
    session per worktree in tmux/screen panes, with the exact commands.
 
 Agenda (3.5 h):
-- 0:00–0:15 — Setup: verify the machine, fork, clone, CLAUDE.md in place
+- 0:00–0:15 — Setup: verify the machine, fork in the browser, agent clones,
+  CLAUDE.md in place
 - 0:15–0:35 — Warm-up: re-file the issues, then "99 Bottles of Beer" in the
   attendee's own language and again in one they don't read, verified by diffing
   the two outputs against each other. Plant an off-by-one, watch the diff catch
@@ -107,7 +112,9 @@ Agenda (3.5 h):
 - 3:20–3:30 — Wrap-up, show token usage (`/usage` per session, the console for
   the day) — "what your afternoon cost".
 
-Note on forks/PRs: attendees review each other on their own forks. Include the
+Note on forks/PRs: attendees review each other on their own forks. Keep the list of
+restricted-account symptoms and fixes in the README's setup section — can't fork,
+org SSO, and the `gh auth refresh -s workflow` one that bites at 2:00. Include the
 `gh pr create --repo <their-fork>` incantation so PRs don't accidentally target
 this upstream template.
 

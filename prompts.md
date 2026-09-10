@@ -16,8 +16,13 @@ Three habits worth forming today:
 
 ## Setup
 
-Do these two first, in a plain shell — both need a browser or a human, so no prompt
-gets you out of them:
+Fork the repo yourself first, in a browser:
+[github.com/SACGF/ai_agent_workshop](https://github.com/SACGF/ai_agent_workshop) →
+**Fork** → **Create fork**. A restricted GitHub account fails at exactly this step,
+and one click tells you so immediately — a 403 relayed through an agent doesn't.
+
+Then these two, in a plain shell. Both need a browser or a human, so no prompt gets
+you out of them:
 
 ```bash
 gh auth login            # say yes to "Authenticate Git with your GitHub credentials"
@@ -30,9 +35,10 @@ workshop-git-identity    # your git name and email, read back off GitHub
 > printing it. Report pass/fail for each. For anything that fails, give me the exact
 > command to type myself; don't try to fix it.
 
-> Fork `github.com/SACGF/ai_agent_workshop` to my GitHub account and clone my fork to
-> `~/ai_agent_workshop`, with `origin` pointing at my fork and `upstream` at SACGF.
-> Then show me `git remote -v` and tell me my fork's full `owner/name`.
+> I've already forked `SACGF/ai_agent_workshop` in the browser. Find it under my
+> account and clone it to `~/ai_agent_workshop`, with `origin` pointing at my fork and
+> `upstream` at SACGF. Then show me `git remote -v` and tell me my fork's full
+> `owner/name`.
 
 > Copy `specs/CLAUDE.md.example` to `CLAUDE.md` in the repo root, and fill in the fork
 > placeholder at the top with my actual fork name.

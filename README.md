@@ -32,10 +32,24 @@ Everything else, tell it.
 
 ## Setup (15 minutes, do this first)
 
-Four commands, and only because each one needs a human. The agent does the rest.
+One click and four commands. They're here because each one needs a human; the agent
+does everything after them.
+
+**First, fork this repo in your browser.**
+[github.com/SACGF/ai_agent_workshop](https://github.com/SACGF/ai_agent_workshop) →
+**Fork** → **Create fork**. Keep the default name. Ten seconds.
+
+Do this yourself rather than asking the agent to run `gh repo fork`. Forking is the
+step a restricted GitHub account fails at — SSO-protected org, a fine-grained token
+with no repo-creation rights, a policy against new public repos — and it fails before
+anything else can work. In a browser you find out in one click and can switch to a
+personal account; through the agent you get a 403 that it will cheerfully try three
+ways around while your twenty minutes go.
+
+**Then, on the VM:**
 
 ```bash
-gh auth login            # first. Browser on your laptop, code from this terminal.
+gh auth login            # browser on your laptop, code from this terminal.
                          #   Say yes to "Authenticate Git with your GitHub
                          #   credentials" — without it, git push has no password.
 workshop-git-identity    # sets your git name and email from your GitHub account
@@ -43,9 +57,17 @@ claude --version         # must print a version — everything below depends on 
 claude                   # start it, from anywhere
 ```
 
-`gh auth login` is the one thing the agent can't do for you: it needs a browser you
-are sitting in front of. And an unset git identity doesn't fail until your first
-commit, twenty minutes from now, so get it out of the way.
+`gh auth login` needs a browser you are sitting in front of, and an unset git identity
+doesn't fail until your first commit twenty minutes from now — so get both out of the
+way while nothing depends on them.
+
+**If your GitHub account is locked down**, the three places it bites, in order:
+
+| Symptom | Fix |
+|---|---|
+| Can't fork at all | Use a personal account, or grab an organiser. Nothing today touches an org repo. |
+| `gh` 403s on the org | Authorise the token for your org — GitHub shows the link in the error. |
+| `push` refused on `.github/workflows/` | `gh auth refresh -s workflow`, then push again. Bites at 2:00, not now. |
 
 Then, in Claude Code:
 
@@ -55,11 +77,12 @@ Then, in Claude Code:
 > printing it. Report pass/fail for each. For anything that fails, give me the exact
 > command to type myself; don't try to fix it.
 
-Now have it fork this repo:
+Now have it clone the fork you made:
 
-> Fork `github.com/SACGF/ai_agent_workshop` to my GitHub account and clone my fork to
-> `~/ai_agent_workshop`, with `origin` pointing at my fork and `upstream` at SACGF.
-> Then show me `git remote -v` and tell me my fork's full `owner/name`.
+> I've already forked `SACGF/ai_agent_workshop` in the browser. Find it under my
+> account and clone it to `~/ai_agent_workshop`, with `origin` pointing at my fork and
+> `upstream` at SACGF. Then show me `git remote -v` and tell me my fork's full
+> `owner/name`.
 
 The agent can change its own working directory but not your shell's, so move into the
 clone and restart there — from now on it starts every session already knowing the

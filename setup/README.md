@@ -268,6 +268,11 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
       attendees will find it at 2:00.
 - [ ] Enable Actions on the scratch fork (forks ship with them disabled, one
       click on the Actions tab) and confirm `gh run watch` works.
+- [ ] **Send the fork link in the joining email.** Attendees fork in the browser
+      themselves (`gh repo fork` is the step a locked-down GitHub account fails at),
+      so having them click it a day early surfaces SSO and repo-creation problems
+      before 0:05 rather than during it. Forking early costs them nothing — forks
+      don't copy issues either way.
 - [ ] Per-key spend caps set, one key per VM.
 - [ ] 2–3 spare VMs powered on. There is no rebuild time in a 3.5-hour session,
       so recovery has to be "here is a new IP".
