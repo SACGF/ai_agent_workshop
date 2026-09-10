@@ -5,7 +5,8 @@
 #
 # Substitute before use — see setup/README.md for the render loop:
 #   __HOSTNAME__            e.g. ws-07
-#   __VM_PASSWORD__         per-VM random, 20+ chars. Never shared across VMs.
+#   __VM_PASSWORD__         per-VM, four random words (~55 bits). See setup/README.md.
+#                           Never shared across VMs.
 #   __ANTHROPIC_API_KEY__   per-VM key, so spend caps bite individually and the
 #                           wrap-up "what your afternoon cost" is per-person.
 #

@@ -35,6 +35,34 @@ snapshotting. Budget 30–40 minutes for a cold run: the R packages and the 3 GB
 reference genome dominate it. `SKIP_GENOME=1 sudo -E bash setup/provision.sh`
 skips the download while you are iterating on everything else.
 
+### When a run looks stuck
+
+Two false alarms, and "no output, no CPU" is the symptom of both. A provisioning
+run that is genuinely working is always burning CPU or moving bytes.
+
+**Stopped, not hung.** A stray `Ctrl-Z` in the tmux pane — easy when you are
+reaching for `Ctrl-B` — suspends `apt-get` mid-install while it still holds the
+dpkg lock. The parent shell then waits forever on a child that is never
+scheduled, so the run freezes on whatever line it had last printed (a
+`Processing triggers for ...` is the likely candidate, which reads convincingly
+like a hang in `ldconfig`). The tell is process state `T`:
+
+```bash
+ps -eo pid,stat,wchan:20,args --forest | grep -E 'apt-get|dpkg|Rscript'
+#   1892 T+  do_signal_stop  apt-get install -y bedtools bcftools ...
+sudo kill -CONT 1892      # resumes exactly where it stopped, lock intact
+```
+
+`bash -c` is not interactive, so there is no job to `fg` — `SIGCONT` is the
+lever. Use `tmux detach` (`Ctrl-B d`) to leave a run alone, never `Ctrl-Z`.
+
+**Buffered, not hung.** `| tee ~/provision.log` makes stdout a pipe, so apt and
+`Rscript` switch from line- to block-buffering and both the log and the pane can
+lag the real position by several KB. The `ps` tree above is the honest answer to
+"where is it?" — the last printed line is not. The legitimately quiet stretches
+are the R packages building from source (~15 min, if the p3m probe missed) and
+the genome stream.
+
 ### Sizing the VM
 
 Given a choice between **4 cores / 10 GB** and **2 cores / 30 GB** at the same
@@ -110,13 +138,20 @@ out of it: the API key and passwords are rendered per VM below, never committed.
 
 ## Per-VM
 
-Render one cloud-init per attendee. Write the output somewhere outside the
-repo — it contains a live API key and a password.
+The order is **passwords first, VMs second, IPs last**. A password is baked into the
+VM at boot and cannot be read back off it afterwards, so there is nothing to collect
+from a running machine — you generate the password, then create the VM with it. The
+IP is the only field that works the other way around.
+
+### 1. Render one cloud-init per attendee
+
+Before any VM exists. Write the output somewhere outside the repo — it contains a
+live API key and a password.
 
 ```bash
 out=~/workshop-vms; mkdir -p "$out"; chmod 700 "$out"
 for i in $(seq -w 1 30); do
-  pw=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 20)
+  pw=$(grep -xE '[a-z]{3,7}' /usr/share/dict/words | shuf -n4 | paste -sd- -)
   key=$(sed -n "${i}p" ~/workshop-keys.txt)      # one API key per line
   sed -e "s/__HOSTNAME__/ws-$i/" \
       -e "s/__VM_PASSWORD__/$pw/" \
@@ -126,19 +161,61 @@ for i in $(seq -w 1 30); do
 done
 ```
 
-Then launch each VM from the snapshot with its own file as user-data. On a bare
-Ubuntu image with no snapshot, the same file still works — it detects the
-missing build and runs `provision.sh` at first boot, costing several minutes and
-making every VM pull from apt and GitHub simultaneously.
+Four words is ~55 bits — not falling to online guessing in an afternoon, and
+typeable from a printed card with no echo by someone on an unfamiliar keyboard
+layout. `openssl rand -base64 18` is stronger on paper and worse in a room: it gets
+mistyped, and then mistyped again every time the venue wifi drops. Skim the column
+once before printing — a system wordlist will occasionally offer a word you would
+rather not hand to a room. (`/usr/share/dict/words` comes from `wamerican`; any
+wordlist does.)
+
+### 2. Create the VMs
+
+Launch each one from the snapshot with its own file as user-data, and name the
+instance after its hostname so step 3 is a join rather than a puzzle. On a bare
+Ubuntu image with no snapshot the same file still works — it detects the missing
+build and runs `provision.sh` at first boot, costing several minutes and making
+every VM pull from apt and GitHub simultaneously.
 
 Boot check: `cloud-init status --wait` on the VM, or the marker file
 `/var/lib/cloud/workshop-ready`.
 
+### 3. Join the IPs, then print
+
+Export `host,ip` from whatever console or CLI your cloud gives you — `openstack
+server list -f csv -c Name -c Networks`, `aws ec2 describe-instances`, the web
+console's CSV download, all fine — then join on the hostname:
+
+```bash
+join -t, <(sort ips.csv) <(sort "$out/cards.csv") > "$out/cards-final.csv"
+# ws-01,203.0.113.17,cobra-mantle-drift-pony
+```
+
+That file is the mail merge, and a spreadsheet is a perfectly good way to drive it.
+Each card carries four lines and nothing else:
+
+```
+  ws-07
+  ssh ubuntu@203.0.113.17
+  cobra-mantle-drift-pony
+
+  First thing you type after logging in:  tmux
+```
+
+The `tmux` line is not decoration. Venue wifi drops, and without it a dropped
+connection kills a Claude Code session mid-exercise; with it, reconnecting and
+`tmux attach` costs fifteen seconds. It also makes the balcony break in the agenda
+work.
+
+If your cloud hands out predictable DNS names, use those on the card instead and
+skip the join entirely.
+
 ## Passwords, and why they are fine here
 
-- **20+ random characters, different on every VM.** Public-IP SSH is
+- **Four random words (~55 bits), different on every VM.** Public-IP SSH is
   brute-forced continuously; a weak or shared password is a miner on your cloud
-  bill inside the hour. A random 20-char is not falling in 3.5 hours.
+  bill inside the hour. Four words from a 25k wordlist is not falling in 3.5
+  hours, or in 3.5 years.
 - **Restrict SSH to the venue's public IP** in the security group if you can get
   it. Then none of the above matters.
 - **Open 8000 inbound** as well, or the volunteer gene-server stretch goal
@@ -171,6 +248,18 @@ Print each attendee a card: hostname or IP, user `ubuntu`, their password.
 - [ ] **R binaries or source?** `provision.sh` probes p3m.dev for this release's
       codename and falls back to building from source. Watch that line go past —
       the fallback works but turns a two-minute step into fifteen.
+- [ ] **`/remote-control` from your own account**, for the 1:45 balcony break. It
+      needs a Pro/Max/Team/Enterprise login and **does not work with API keys**, so
+      the workshop key on each VM cannot drive it. Test the demo you will give from
+      the front (`unset ANTHROPIC_API_KEY`, `claude`, `/login`, `/remote-control`,
+      scan the QR with your phone), and check there is usable signal wherever you
+      send the room for air. Nothing later in the agenda depends on it.
+- [ ] **The warm-up runs on the image.** Both halves of the 0:15 exercise, since it
+      is the first thing thirty people do at once:
+      ```bash
+      Rscript -e 'cat("ok\n")' && python3 -c 'print("ok")'
+      diff <(printf 'a\n') <(printf 'a\n') && echo "process substitution ok"
+      ```
 - [ ] `gh auth login` device flow end to end from a real VM, then
       `workshop-git-identity`, then a test commit and push to a scratch fork.
 - [ ] Push a change to `.github/workflows/` on that fork. If it fails with

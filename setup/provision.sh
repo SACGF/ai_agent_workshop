@@ -35,13 +35,20 @@ EOF
 
 say "Installing packages"
 apt-get update
-apt-get install -y \
+apt-get install -y --no-install-recommends \
   bedtools bcftools samtools tabix \
-  tmux git curl jq less \
+  tmux git openssh-client patch curl jq less \
   build-essential python3-venv python3-dev \
   rustc cargo \
   ca-certificates gnupg wget unzip vim nano tree ripgrep htop
-#  ^ bedtools is the oracle for every golden test; bcftools backs the "it parsed
+#  ^ --no-install-recommends because bedtools Recommends python3-pybedtools,
+#    which drags in gffutils, biopython, matplotlib, reportlab, python3-tk and
+#    ncbi-blast+ — and bcftools Recommends matplotlib again for plot-vcfstats.
+#    Several hundred MB on every image for things no exercise touches. The
+#    Recommends we *do* want are named explicitly instead: openssh-client and
+#    patch come in via git normally, and git push over SSH is not optional.
+#
+#    bedtools is the oracle for every golden test; bcftools backs the "it parsed
 #    and exited 0" contrast in issues/04; tmux is named verbatim in the
 #    parallel-agents prompt; less is in the ROT13 answer-key one-liner; rustc and
 #    cargo because Rust is the language prompts.md actually names, and a rustup
@@ -146,6 +153,9 @@ check git      git --version;       check tmux     tmux -V
 check jq       jq --version;        check uv       uv --version
 check claude   claude --version;    check rustc    rustc --version
 check python3  python3 --version
+# tabix and ssh arrive as Recommends of other packages normally, and the main
+# install runs --no-install-recommends. Check them rather than assume them.
+check tabix    tabix --version;     check ssh      ssh -V
 check Rscript  Rscript --version
 check "R pkgs" Rscript -e 'invisible(lapply(c("optparse","data.table","testthat","lintr","jsonlite","httr2","plumber"), library, character.only=TRUE)); cat("all seven load\n")'
 if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
