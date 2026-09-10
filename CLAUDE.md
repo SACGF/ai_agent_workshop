@@ -90,6 +90,15 @@ is by inspection against `workshop-repo-notes.md`, plus `gh` for issues/PRs.
   record: 13 violations, with line numbers and what each tool does or doesn't catch.
   Measured, not assumed: `bcftools view` and `bcftools stats` both exit 0. If you
   regenerate the file, re-measure and update the key, since line numbers will move.
+- `data/hg002.vcf.gz` (+`.tbi`) and `data/hg002.highconf.bed` are region-subsets of
+  GIAB HG002 NISTv4.2.1 (GRCh38), unmodified otherwise. Provenance is in the VCF
+  header as `##workshop_source` / `##workshop_regions`; the regions are the four
+  neighbourhood spans of `data/genes.gtf` (`bedtools merge -d 1000000` over its gene
+  rows). Measured 2026-09-10: 2,436 records, 2,019 SNVs, 418 indels, longest REF 40 bp,
+  119 variants outside the 387 high-confidence intervals, 2 of 25 genes with zero
+  variants. Those counts appear in `issues/04`, `issues/06` and `tests/README.md` — if
+  you regenerate, re-measure and update all three. The VCF is the **negative control**
+  for the validator exercise, so it must stay valid: never plant anything in it.
 - Gene coordinates are defined as the **MANE Select span**, not the GTF `gene` row span
   (they differ — BRCA1 by ~45 kb). This is stated in `specs/gene-api.openapi.yaml`; keep
   it stated, or the two backends silently disagree.

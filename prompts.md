@@ -211,6 +211,28 @@ Pick one. They're independent.
 > We found N. The answer key says there are 13. Don't read the key — instead, tell me
 > which categories of rule we haven't implemented at all yet.
 
+**Annotate real variants**
+
+> Read `issues/06-annotate-real-variants.md`, then plan `mytools annotate`. Before you
+> write code: run `bedtools intersect -a data/genes.bed -b data/hg002.vcf.gz -c` and
+> `-wa -wb`, show me what they print, and tell me how bedtools decides the interval a
+> variant occupies — especially for the indels. Don't reason about it, measure it.
+
+The measuring is the exercise. There are three coordinate systems in this repo and you
+are about to join two of them.
+
+> Now implement it, with golden tests against those two bedtools commands. Genes with
+> zero variants must still appear in the output — two of the 25 have none.
+
+> Add `--confident data/hg002.highconf.bed`. 119 of the 2,436 variants fall outside
+> those regions; the flag should drop exactly those. Write the golden test first.
+
+And the negative control the validator was missing:
+
+> Run our `vcf-validate` on `data/hg002.vcf.gz`. It's a real, valid VCF, so anything it
+> reports is a bug in our rules, not in GIAB. Fix whatever fires, and add it to CI as a
+> must-be-silent case alongside `broken.vcf`.
+
 **Real reads, real scale**
 
 > `bedtools bamtobed -i /data/HG002.neighbourhoods.bam > reads.bed` gives me about

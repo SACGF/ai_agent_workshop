@@ -315,6 +315,21 @@ oracle — `bcftools` is a parser, not a validator, so the only way to know your
 are right is to test them directly. Score yourself against the ROT13'd answer key when
 you're done. Full brief in [`issues/04-vcf-forensics.md`](issues/04-vcf-forensics.md).
 
+**Annotate real variants.** `data/hg002.vcf.gz` is 2,436 real calls from GIAB's HG002
+benchmark over the same four neighbourhoods as `genes.bed`, and
+`data/hg002.highconf.bed` is the 387 regions GIAB stands behind. Which variants hit
+which gene, and which of those can you trust?
+
+That's the interval code you wrote this morning, doing a real job — with three
+coordinate systems in play at once (VCF 1-based, BED 0-based half-open, GTF 1-based
+inclusive), and indel spans defined by REF length rather than ALT. bedtools reads VCF
+natively, so it's still the oracle. Full brief in
+[`issues/06-annotate-real-variants.md`](issues/06-annotate-real-variants.md).
+
+It also gives the VCF validator above something it badly needs: a **valid** VCF. A
+rule that fires on `broken.vcf` and also fires on the GIAB truth set is a broken rule,
+and without a negative control you'd never know.
+
 **Real reads, real scale.** Everything you've tested against so far fits on one
 screen — deliberately, because that's what makes the golden tests checkable by eye.
 `/data/HG002.neighbourhoods.bam` is the other end: real GIAB HG002 reads over the same
@@ -489,6 +504,8 @@ data/
   genes.gtf                     real GENCODE v50 slice, 4 neighbourhoods, 1-based
   broken.vcf                    20k variants, 13 planted spec violations
   broken.vcf.answers.rot13      the answer key, ROT13'd
+  hg002.vcf.gz                  2,436 real GIAB HG002 calls, same 4 neighbourhoods
+  hg002.highconf.bed            GIAB's high-confidence regions over those, 387 rows
 tests/
   README.md                     the golden-test pattern + one worked example
 issues/                         issue texts to re-file on your fork

@@ -52,6 +52,26 @@ implement. Some categories to prime the pump:
 - **Ordering and consistency.** Sorted by POS within a contig? Any site claiming two
   different REF alleles?
 
+## The negative control you now have
+
+`data/hg002.vcf.gz` is a real, valid VCF — GIAB's HG002 benchmark, unmodified, over
+the same four gene neighbourhoods as the rest of `data/`. 2,436 records with genuinely
+messy INFO and FORMAT fields: `Number=A` and `Number=R` arrays, multi-platform
+provenance keys, `GT:PS:DP:ADALL:AD:GQ`.
+
+**Your validator must report zero violations on it.** That is not a suggestion — it is
+the other half of every test you write. A rule that fires on `broken.vcf` and also
+fires on the GIAB truth set has not found a bug in GIAB; it has found a bug in your
+rule, and it would have gone unnoticed while you congratulated yourself on a high
+count.
+
+```bash
+mytools vcf-validate data/hg002.vcf.gz     # want: no output, exit 0
+mytools vcf-validate data/broken.vcf       # want: violations, exit non-zero
+```
+
+Run both every time. The second number is meaningless without the first.
+
 ## Scoring yourself
 
 `data/broken.vcf.answers.rot13` has the full list, ROT13'd so you don't spoil it by

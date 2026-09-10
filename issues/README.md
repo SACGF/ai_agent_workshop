@@ -33,6 +33,10 @@ gh issue create --repo "$FORK" \
 gh issue create --repo "$FORK" \
   --title "Stretch: does it survive real data?" \
   --body-file issues/05-real-data-scale.md
+
+gh issue create --repo "$FORK" \
+  --title "Stretch: annotate real variants with the genes they hit" \
+  --body-file issues/06-annotate-real-variants.md
 ```
 
 Check with `gh issue list --repo "$FORK"`.

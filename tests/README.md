@@ -176,6 +176,22 @@ multi-transcript genes, real mess.
 
 `genes.bed` is the 25 genes in there that have a **MANE Select** transcript, as BED6.
 
+`data/hg002.vcf.gz` and `data/hg002.highconf.bed` are the same four neighbourhoods
+seen through a different instrument. The VCF is GIAB's **HG002 NISTv4.2.1 benchmark**
+for GRCh38, region-subset and otherwise unmodified: 2,436 calls, 2,019 SNVs and 418
+indels, longest REF 40 bp, with real `Number=A`/`Number=R` INFO arrays and a
+`GT:PS:DP:ADALL:AD:GQ` sample column. Provenance is in the header — `bcftools view -h`
+and look for the `##workshop_` lines.
+
+Two things it is for. It is an ordinary interval file that bedtools reads natively, so
+`bedtools intersect -a data/genes.bed -b data/hg002.vcf.gz -c` is a golden test like
+any other (`issues/06`). And it is the **negative control** for the VCF validator in
+`issues/04`: it is valid, so a validator that reports anything on it is wrong.
+
+`hg002.highconf.bed` is GIAB's high-confidence regions over those neighbourhoods, 387
+intervals covering 94% of the span. 119 of the 2,436 variants sit outside it. Real
+BED, real gaps, and unlike `a.bed` nobody arranged the edge cases on purpose.
+
 Two things to know before you build anything on these:
 
 - **A gene's `gene` row and its MANE transcript are not the same span.** BRCA1's
