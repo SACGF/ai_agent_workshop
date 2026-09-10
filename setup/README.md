@@ -35,9 +35,43 @@ snapshotting. Budget 30–40 minutes for a cold run: the R packages and the 3 GB
 reference genome dominate it. `SKIP_GENOME=1 sudo -E bash setup/provision.sh`
 skips the download while you are iterating on everything else.
 
-**Size the master VM accordingly** — the genome is ~3 GB compressed on the wire
-and ~10 GB of headroom to unpack and index, so give it 30 GB of disk. The
-snapshot every attendee boots from carries it.
+### Sizing the VM
+
+Given a choice between **4 cores / 10 GB** and **2 cores / 30 GB** at the same
+price, take the disk. Almost everything here waits on the network rather than
+the CPU: Claude Code sessions are API-bound even three at a time, and the
+fixtures are small enough that bedtools finishes before you look up. The only
+real CPU consumer is one `cargo build` in a stretch goal, where two cores costs
+you seconds. A full disk, by contrast, produces errors an agent will
+confidently misdiagnose while its attendee loses twenty minutes.
+
+Where the disk goes: the reference genome is **~3.1 GB unpacked**, not the ~1 GB
+you see published — that figure is the gzip, and bedtools needs it uncompressed.
+Ubuntu plus the toolchain (R and its packages, rustc, go, uv's Python) is a few
+GB more. 30 GB leaves real headroom for cargo target directories, venvs and
+whatever an attendee's agent decides to install.
+
+On a small disk, `GENOME_CONTIGS="chr7 chr17 chrM"` cuts the genome to ~250 MB
+and loses nothing the repo needs — those are the only contigs the fixtures want
+*sequence* for, and `chrom.sizes` stays complete regardless, so `slop` and
+`complement` still work on every contig. Measure before you commit to a size:
+
+```bash
+df -h /; du -sh /data /usr/lib/R /usr/lib/go-* 2>/dev/null
+```
+
+### Aligned reads, optionally
+
+`WITH_BAM=1` slices a public GIAB HG002 BAM (Illumina 2x250, GRCh38) down to the
+same four gene neighbourhoods as `data/genes.gtf`, giving ~2 Mb of real aligned
+reads that line up with the fixtures — enough for `bedtools coverage -a
+data/genes.bed -b` and `genomecov` to mean something. The source file is 122 GB
+and is never downloaded: samtools pulls the index and range-requests only those
+regions, so it costs a few hundred MB and several minutes.
+
+Off by default, because nothing in the agenda needs it. If you turn it on, the
+script checks the remote header for `SN:chr17` first — a contig-naming mismatch
+would otherwise hand you an empty BAM with no error at all.
 
 ### What it puts on the image
 

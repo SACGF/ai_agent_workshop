@@ -184,6 +184,11 @@ if [ -s /data/GRCh38.fa.fai ]; then
 else
   echo "FAIL /data/GRCh38.fa      missing (SKIP_GENOME set?)"; fail=1
 fi
+if [ -s /data/HG002.neighbourhoods.bam.bai ]; then
+  n=$(samtools view -c /data/HG002.neighbourhoods.bam 2>/dev/null || echo 0)
+  if [ "$n" -gt 0 ]; then echo "ok   HG002 bam            $n reads, $(du -h /data/HG002.neighbourhoods.bam | cut -f1)"
+  else echo "FAIL HG002 bam            empty — contig naming mismatch?"; fail=1; fi
+fi
 exit $fail
 EOF
 chmod 0755 /usr/local/bin/workshop-doctor
@@ -214,44 +219,69 @@ else
 fi
 
 say "Reference genome"
-# GENCODE v50 primary assembly — the same release data/genes.gtf came from, so
-# contig names (chr1, chr17) and coordinates line up with the fixtures exactly.
-# ~3 GB on disk, baked into the snapshot once rather than pulled by thirty VMs.
-# Set SKIP_GENOME=1 to leave it out.
+# GRCh38 primary assembly from GENCODE v50 — the same release data/genes.gtf
+# came from, so contig names and coordinates agree.
+#
+# Full assembly by default: ~3.1 GB unpacked (the ~1 GB you see published is
+# the gzip, and bedtools needs it uncompressed). That is the right call on a
+# 30 GB disk, and it means getfasta works on whatever an attendee brings rather
+# than only on our fixtures.
+#
+# On a small disk, subset instead. The only fixtures needing real *sequence*
+# are genes.bed and genes.gtf, both chr7 and chr17 — about 250 MB. a.bed and
+# b.bed sit at coordinates 0-600, which in a real genome is telomeric N, so
+# there is nothing there to read anyway.
+#
+# Chromosome *lengths* are separate: bedtools slop/complement/shuffle want -g
+# for every contig, and that file is a few KB. So we stream the download,
+# write sequence only for the contigs we keep, and measure lengths for all of
+# them on the way past. chrom.sizes is complete either way, and peak disk is
+# whatever we kept — never the whole assembly plus its gzip.
+#
+#   GENOME_CONTIGS="chr7 chr17 chrM"   ~250 MB, everything the repo needs
+#   GENOME_CONTIGS=all                 the default
+#   SKIP_GENOME=1                      skip it entirely
 GENOME_DIR=${GENOME_DIR:-/data}
+GENOME_CONTIGS=${GENOME_CONTIGS:-all}
 GENOME_URL=${GENOME_URL:-https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_50/GRCh38.primary_assembly.genome.fa.gz}
 if [ -n "${SKIP_GENOME:-}" ]; then
-  echo "SKIP_GENOME set — skipping the genome download"
+  echo "SKIP_GENOME set — skipping"
 elif [ -s "$GENOME_DIR/GRCh38.fa.fai" ]; then
   echo "already present at $GENOME_DIR/GRCh38.fa"
 else
-  free_gb=$(df -BG --output=avail "$(dirname "$GENOME_DIR")" | tail -1 | tr -dc 0-9)
-  [ "${free_gb:-0}" -ge 10 ] || echo "WARNING: only ${free_gb}G free, the genome needs ~10G to unpack"
   mkdir -p "$GENOME_DIR"
-  # Download to a temp name so an interrupted pull never looks complete.
-  curl -fL --retry 3 --retry-delay 5 "$GENOME_URL" -o "$GENOME_DIR/.genome.fa.gz.part"
-  mv "$GENOME_DIR/.genome.fa.gz.part" "$GENOME_DIR/GRCh38.fa.gz"
-  gunzip -f "$GENOME_DIR/GRCh38.fa.gz"
+  echo "streaming $GENOME_URL, keeping: $GENOME_CONTIGS"
+  # Write to temp names, so an interrupted download never looks complete.
+  curl -fL --retry 3 --retry-delay 5 "$GENOME_URL" | gzip -dc | awk \
+    -v want="$GENOME_CONTIGS" -v sizes="$GENOME_DIR/.chrom.sizes.part" '
+    BEGIN { if (want == "all") all=1; else { n=split(want,a," "); for(i=1;i<=n;i++) w[a[i]]=1 } }
+    /^>/ { name=substr($0,2); sub(/[ \t].*/,"",name); ord[++k]=name
+           keep = (all || (name in w)); if (keep) print; next }
+         { len[name] += length($0); if (keep) print }
+    END  { for(i=1;i<=k;i++) printf "%s\t%d\n", ord[i], len[ord[i]] > sizes }
+  ' > "$GENOME_DIR/.genome.fa.part"
+  mv "$GENOME_DIR/.genome.fa.part"  "$GENOME_DIR/GRCh38.fa"
+  mv "$GENOME_DIR/.chrom.sizes.part" "$GENOME_DIR/GRCh38.chrom.sizes"
   samtools faidx "$GENOME_DIR/GRCh38.fa"
-  # bedtools slop/complement/shuffle want a genome file, which is the first two
-  # columns of the .fai.
-  cut -f1,2 "$GENOME_DIR/GRCh38.fa.fai" > "$GENOME_DIR/GRCh38.chrom.sizes"
+  echo "kept $(cut -f1 "$GENOME_DIR/GRCh38.fa.fai" | tr '\n' ' ')-- $(du -h "$GENOME_DIR/GRCh38.fa" | cut -f1)"
+  echo "chrom.sizes covers $(wc -l < "$GENOME_DIR/GRCh38.chrom.sizes") contigs"
 fi
 
-if [ -d "$GENOME_DIR" ]; then
-  cat > "$GENOME_DIR/README.md" <<'EOF'
+if [ -s "$GENOME_DIR/GRCh38.fa.fai" ]; then
+  n_contigs=$(wc -l < "$GENOME_DIR/GRCh38.fa.fai")
+  cat > "$GENOME_DIR/README.md" <<EOF
 # /data — reference genome
 
-Read-only. Not to be confused with `data/` inside the workshop repo, which holds
-the small BED/GTF/VCF fixtures the exercises are built on. This directory holds
-one thing: a human reference genome, for the bedtools subcommands that need
-actual sequence or chromosome lengths.
+Read-only. Not the same thing as \`data/\` inside the workshop repo, which holds
+the small BED/GTF/VCF fixtures the exercises are built on. This directory is for
+the bedtools subcommands that need real sequence or chromosome lengths.
 
-    GRCh38.fa               GENCODE v50 primary assembly, same release as the
-                            repo's data/genes.gtf, so contig names match
+    GRCh38.fa               GENCODE v50 primary assembly, $n_contigs contigs,
+                            $(du -h "$GENOME_DIR/GRCh38.fa" | cut -f1). Same release as the
+                            repo's data/genes.gtf, so contig names agree.
     GRCh38.fa.fai           samtools faidx index
-    GRCh38.chrom.sizes      first two columns of the .fai — this is what
-                            bedtools calls a "genome file" (-g)
+    GRCh38.chrom.sizes      every contig in the assembly and its length. This is
+                            what bedtools calls a genome file (-g).
 
 Sequence for the gene spans in the repo:
 
@@ -261,13 +291,66 @@ Sequence for the gene spans in the repo:
 
     bedtools slop -i ~/ai_agent_workshop/data/genes.bed -g /data/GRCh38.chrom.sizes -b 1000
 
-Note the fixtures in `a.bed` and `b.bed` use real contig names at coordinates
-near zero, which in GRCh38 are telomeric N. `getfasta` on those is all Ns, and
-that is correct — use `genes.bed` when you want real sequence.
+One thing that surprises people: \`getfasta\` on \`a.bed\` or \`b.bed\` returns runs
+of N. Those fixtures are synthetic intervals at coordinates 0-600, and in a real
+genome that is telomere. Nothing is wrong — use \`genes.bed\` when you want real
+sequence.
 EOF
+  if [ -s "$GENOME_DIR/HG002.neighbourhoods.bam.bai" ]; then
+    cat >> "$GENOME_DIR/README.md" <<'EOF'
+
+## HG002.neighbourhoods.bam
+
+Real aligned reads (GIAB HG002, Illumina 2x250, GRCh38), sliced to the same four
+gene neighbourhoods as `data/genes.gtf` — TP53, BRCA1, EGFR, CFTR — and nothing
+else. About 2 Mb of genome, so intervals outside those regions have no coverage,
+which is a property and not a bug.
+
+    bedtools coverage -a ~/ai_agent_workshop/data/genes.bed \
+                      -b /data/HG002.neighbourhoods.bam
+    bedtools genomecov -ibam /data/HG002.neighbourhoods.bam -bg | head
+EOF
+  fi
   chmod 0755 "$GENOME_DIR"
   chmod 0444 "$GENOME_DIR"/* 2>/dev/null || true
-  chmod 0444 "$GENOME_DIR/README.md"
+fi
+
+say "Aligned reads (opt-in)"
+# WITH_BAM=1 slices a public GIAB HG002 BAM down to exactly the four gene
+# neighbourhoods in data/genes.gtf, giving ~2 Mb of real aligned reads that line
+# up with the fixtures. Makes `bedtools coverage -a data/genes.bed -b` and
+# genomecov mean something. Off by default: it adds several minutes to the build
+# and nothing in the agenda needs it.
+#
+# The source is 122 GB, so we never download it — samtools fetches the .bai and
+# range-requests only the regions we ask for.
+BAM_URL=${BAM_URL:-https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/HG002_NA24385_son/NIST_Illumina_2x250bps/novoalign_bams/HG002.GRCh38.2x250.bam}
+# Neighbourhood spans, from: bedtools merge -d 1000000 on the gene rows of
+# data/genes.gtf. TP53, BRCA1, EGFR, CFTR.
+BAM_REGIONS=${BAM_REGIONS:-"chr7:54721724-55595006 chr7:117262918-117883675 chr17:7591230-7833742 chr17:42998265-43305397"}
+if [ -z "${WITH_BAM:-}" ]; then
+  echo "WITH_BAM unset — skipping. Set WITH_BAM=1 to include aligned reads."
+elif [ -s "$GENOME_DIR/HG002.neighbourhoods.bam.bai" ]; then
+  echo "already present"
+else
+  # Two things to establish before spending ten minutes: that samtools can talk
+  # HTTPS at all, and that the remote header uses chr-prefixed contigs. A naming
+  # mismatch would otherwise produce an empty BAM and no error.
+  if ! samtools --version | grep -qi 'libcurl\|htslib.*curl' && ! samtools view -H "$BAM_URL" >/dev/null 2>&1; then
+    echo "WARNING: samtools cannot read remote URLs here — skipping the BAM"
+  elif ! samtools view -H "$BAM_URL" 2>/dev/null | grep -q 'SN:chr17'; then
+    echo "WARNING: $BAM_URL header has no SN:chr17 — contig naming differs from"
+    echo "         the fixtures, so the slice would be empty. Skipping."
+  else
+    # shellcheck disable=SC2086
+    samtools view -b -o "$GENOME_DIR/.reads.part.bam" "$BAM_URL" $BAM_REGIONS
+    # Regions come back in request order, which is not necessarily sorted.
+    samtools sort -o "$GENOME_DIR/HG002.neighbourhoods.bam" "$GENOME_DIR/.reads.part.bam"
+    rm -f "$GENOME_DIR/.reads.part.bam"
+    samtools index "$GENOME_DIR/HG002.neighbourhoods.bam"
+    chmod 0444 "$GENOME_DIR"/HG002.neighbourhoods.bam*
+    echo "sliced $(du -h "$GENOME_DIR/HG002.neighbourhoods.bam" | cut -f1), $(samtools view -c "$GENOME_DIR/HG002.neighbourhoods.bam") reads"
+  fi
 fi
 
 say "Firewall"
@@ -277,11 +360,18 @@ say "Firewall"
 ufw allow 22/tcp   >/dev/null 2>&1 || true
 ufw allow 8000/tcp >/dev/null 2>&1 || true
 
+say "Reclaiming space"
+apt-get clean          # the .debs; NOT /var/lib/apt/lists, or `apt install` breaks
+rm -rf /root/.cargo/registry /tmp/* 2>/dev/null || true
+df -h / | tail -1
+
 say "Done. Next:"
 cat <<EOF
   1. su - $WORKSHOP_USER, run 'claude' once, complete the theme and trust
      prompts. That state lives in the home directory and is the one thing
      cloud-init cannot do for you — do it before you snapshot.
   2. ANTHROPIC_API_KEY=sk-... workshop-doctor    # expect all ok
-  3. Snapshot this VM.
+  3. df -h /   and   du -sh /data /usr/lib/go-* /usr/lib/rustlib 2>/dev/null
+     Know the real numbers before you size the attendee VMs.
+  4. Snapshot this VM.
 EOF
