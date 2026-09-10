@@ -45,7 +45,7 @@ Then pin it so it survives every `/clear`, using `#` from inside a session:
 
 ---
 
-## 0:00 — Warm-up
+## 0:15 — Warm-up
 
 > What is in this repository? Read the README and specs/, then tell me in five bullet
 > points what I am supposed to build today. Don't write any code.
@@ -56,13 +56,28 @@ Then pin it so it survives every `/clear`, using `#` from inside a session:
 Read the `--repo` in what it shows you. "Show me first" is the habit worth forming for
 anything that writes to the network.
 
+Two languages, one diff. Use your language first, then one you don't read:
+
+> Write `bottles.R` that prints the full lyrics of "99 Bottles of Beer" to stdout. Get
+> the bottom of the song right: "1 bottle" is singular, and zero is "no more bottles".
+> Then show me the last eight lines of its output.
+
+> Now write `bottles.py` — same output, and don't look at the R version while you do
+> it. Then diff the two outputs and tell me whether they are byte-identical.
+
+> Introduce a single off-by-one into the Python version, show me the diff, then put it
+> back.
+
+The diff is the point, and it is the same move as `mytools` against `bedtools` later.
+You cannot read the second program; you can still prove it agrees with the first.
+
 > Make `mytools --version` work. Pick the language, keep it to one file, and stop as
 > soon as `mytools --version` prints something and exits 0. Don't implement any
 > subcommands yet.
 
 ---
 
-## 0:20 — Brainstorm to spec
+## 0:35 — Brainstorm to spec
 
 > I want to build a small bedtools-like CLI called `mytools`. Interview me one
 > question at a time until you can write a complete SPEC.md. Ask about scope, flags,
@@ -79,12 +94,12 @@ document full of decisions you never made and won't remember agreeing to.
 > Use `specs/mytools-spec-template.md` as the skeleton. Fill in only the decisions
 > I've actually made and leave the rest as `_______`, then show me what's still blank.
 
-**Stalled at 0:45?** Stop, tell it to copy `specs/fallback-spec.md` to `SPEC.md`, and
+**Stalled at 0:50?** Stop, tell it to copy `specs/fallback-spec.md` to `SPEC.md`, and
 move on — the spec is not the exercise, shipping is.
 
 ---
 
-## 0:50 — Issues, then code
+## 0:55 — Issues, then code
 
 > Read SPEC.md. Break it into 5-7 GitHub issues, one per subcommand, each
 > independently implementable by someone who hasn't read the others. Give each one
@@ -118,7 +133,20 @@ Then switch models — plan with the strong one, execute with the cheap one:
 
 ---
 
-## 1:50 — PR and review
+## 1:45 — Before you go outside
+
+Something longer than the break, then `/remote-control` and out the door. Remote
+Control needs a Pro/Max login — `unset ANTHROPIC_API_KEY`, then `/login` — see the
+README's 1:45 block.
+
+> Read SPEC.md and tests/README.md, then write golden tests for every subcommand I
+> have so far, diffing against real bedtools on data/a.bed and data/b.bed. Cover the
+> bookended, nested, identical, zero-length and position-0 cases. Run them, and fix
+> what fails.
+
+---
+
+## 2:00 — PR and review
 
 > Push this branch and open a PR against my fork. Write a description that says what
 > changed, what's tested, and what isn't.
@@ -135,7 +163,7 @@ agent's review of an agent's code is how the whole thing falls over.
 
 ---
 
-## 1:50 — Guardrails
+## 2:00 — Guardrails
 
 > Set up a test suite that compares `mytools` output to real bedtools on the files in
 > `data/`, following the pattern in tests/README.md. Cover every subcommand and flag
@@ -171,7 +199,7 @@ If CI stays green, your tests are the problem, not the bug. Ask:
 
 ---
 
-## 2:35 — Stretch goals
+## 2:40 — Stretch goals
 
 Pick one. They're independent.
 

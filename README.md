@@ -30,7 +30,7 @@ Everything else, tell it.
 
 ---
 
-## Setup (10 minutes, do this first)
+## Setup (15 minutes, do this first)
 
 Four commands, and only because each one needs a human. The agent does the rest.
 
@@ -114,11 +114,13 @@ grep -n 'your-github-username' CLAUDE.md    # want no output — placeholder rep
 
 | Time | What |
 |---|---|
-| 0:00–0:20 | Setup + first task |
-| 0:20–0:50 | Brainstorm → spec |
-| 0:50–1:50 | Spec → issues → code, in parallel |
-| 1:50–2:35 | PRs, review, and guardrails |
-| 2:35–3:20 | Stretch goals |
+| 0:00–0:15 | Setup |
+| 0:15–0:35 | Warm-up: two languages, one diff |
+| 0:35–0:55 | Brainstorm → spec |
+| 0:55–1:45 | Spec → issues → code, in parallel |
+| 1:45–2:00 | Break — on the balcony, with your agent |
+| 2:00–2:40 | PRs, review, and guardrails |
+| 2:40–3:20 | Stretch goals |
 | 3:20–3:30 | Wrap-up |
 
 Prompts for every exercise are in [`prompts.md`](prompts.md). Copy them, then edit —
@@ -130,35 +132,77 @@ same claim.
 
 ---
 
-### 0:00–0:20 · First task
+### 0:15–0:35 · Warm-up: two languages, one diff
 
-**Goal.** Get from empty repo to a working command with an agent driving, and file
-your issues.
+**Goal.** Let the agent drive something you already know the right answer to, and learn
+today's one trick: verify by diffing, not by reading.
 
-Forks don't copy issues, so yours has none right now. The issue texts are in
-[`issues/`](issues/) — have the agent re-file them:
+First, your issues. Forks don't copy them, so yours has none right now — the texts are
+in [`issues/`](issues/):
 
 > Read `issues/` and file the three numbered 01-03 on my fork with `gh` — leave the
 > stretch ones for later. Show me the commands before you run them.
 
-That "show me first" habit is worth keeping for anything that writes to the network.
+"Show me first" is the habit worth forming for anything that writes to the network.
 Read the `--repo` flag in what it shows you.
 
-Then the warm-up issue itself:
+Now the warm-up proper. *99 Bottles of Beer*, in the language you reach for without
+thinking:
+
+> Write `bottles.R` that prints the full lyrics of "99 Bottles of Beer" to stdout.
+> Get the bottom of the song right: "1 bottle" is singular, and zero is "no more
+> bottles". Then show me the last eight lines of its output.
+
+Read those eight lines yourself, because the bottom of that song is nothing but edge
+cases — a plural that stops being plural, and a count that ends in a word instead of a
+number. That is the same shape as the bug you are going to spend all afternoon not
+writing: **BED intervals are 0-based half-open**, and most wrong answers in this
+workshop are an off-by-one at a boundary.
+
+Then the same program again, in a language you don't use:
+
+> Now write `bottles.py` — same output, and don't look at the R version while you do
+> it. Then diff the two outputs and tell me whether they are byte-identical.
+
+```bash
+diff <(Rscript bottles.R) <(python3 bottles.py) && echo identical
+```
+
+**That diff is the whole workshop in one command.** You can't review the second
+program — you don't know the language well enough — but you can prove it agrees with
+one you can. Every correctness claim today has this shape: `mytools` against
+`bedtools`, byte for byte. The only thing that changes after the warm-up is that the
+reference implementation is someone else's and the edge cases are intervals.
+
+Thirty seconds more, and worth it:
+
+> Introduce a single off-by-one into the Python version, show me the diff, then put it
+> back.
+
+Notice how precisely the diff says *that* something is wrong, and how little it says
+about *where*. That's the 2:00 guardrails exercise in miniature, before you've written
+anything real.
+
+Finally, the warm-up issue itself:
 
 > Make `mytools --version` print a version and exit 0. One file, any language, no
 > subcommands yet. Stop as soon as that works.
 
-**Done when** three issues are listed and the binary runs:
+**Done when** three issues are listed, two languages agree, and the binary runs:
 
 ```bash
 gh issue list --repo "$(gh api user --jq .login)/ai_agent_workshop"
+diff <(Rscript bottles.R) <(python3 bottles.py) && echo identical
 mytools --version
 ```
 
+Swap in your own two languages — Rust is installed, and an agent will happily install
+anything else. The further the second one is from your comfort zone, the better the
+lesson.
+
 ---
 
-### 0:20–0:50 · Brainstorm → spec
+### 0:35–0:55 · Brainstorm → spec
 
 **Goal.** A `SPEC.md` that answers every question five parallel agents are about to ask.
 
@@ -178,7 +222,7 @@ Your `CLAUDE.md` is already in place from setup. Read it now if you haven't — 
 worked example of the genre, and it's shaping every answer you get today. Add to it as
 your design firms up, with `#` or by editing it directly.
 
-**Stalled at 0:45?** Tell the agent to copy `specs/fallback-spec.md` to `SPEC.md` and
+**Stalled at 0:50?** Tell the agent to copy `specs/fallback-spec.md` to `SPEC.md` and
 move on. The spec is not the exercise.
 
 **Done when** `SPEC.md` is in your repo root with no decisions left blank:
@@ -189,7 +233,7 @@ grep -c '_____' SPEC.md    # want 0
 
 ---
 
-### 0:50–1:50 · Issues → code, in parallel
+### 0:55–1:45 · Issues → code, in parallel
 
 **Goal.** Several subcommands built at once, by several agents, and you supervising.
 
@@ -215,7 +259,59 @@ for d in ~/ws-*; do echo "$d  $(git -C "$d" branch --show-current)"; done
 
 ---
 
-### 1:50–2:35 · PRs, review, guardrails
+### 1:45–2:00 · Break — on the balcony, with your agent
+
+**Goal.** Fresh air, and the point of the whole day: the work continues while you are
+not at the keyboard.
+
+Before you stand up, give it something that takes longer than the break:
+
+> Read SPEC.md and tests/README.md, then write golden tests for every subcommand I
+> have so far, diffing against real bedtools on data/a.bed and data/b.bed. Cover the
+> bookended, nested, identical, zero-length and position-0 cases. Run them, and fix
+> what fails.
+
+Then go outside. You are not abandoning it — you are taking it with you.
+
+**Remote Control** connects the session on your VM to the Claude app on your phone, or
+to a browser at [claude.ai/code](https://claude.ai/code). The code, the filesystem and
+the execution all stay on the VM; the phone is another keyboard and screen for the
+session already running.
+
+```
+/remote-control
+```
+
+Accept the one-time confirmation, and a status panel appears with the session URL and
+a QR code. Scan it — install the app first,
+[iOS](https://apps.apple.com/us/app/claude-by-anthropic/id6473753684) or
+[Android](https://play.google.com/store/apps/details?id=com.anthropic.claude) — and
+the conversation is in your hand, live, with your VM behind it.
+
+**One catch, and you need it before you try.** Remote Control needs a Claude Pro, Max,
+Team or Enterprise login. **API keys are not supported**, and your VM runs on a
+workshop API key, so out of the box `/remote-control` will refuse.
+
+- **If you have a Pro or Max subscription**, in the shell you start `claude` from:
+  `unset ANTHROPIC_API_KEY`, then `claude`, then `/login`, then `/remote-control`.
+  That session now bills to your personal subscription rather than the workshop key,
+  which also means it won't appear in the 3:20 cost tally. Worth it once, to see it.
+- **If you don't**, it's demoed from the front, and nothing later in the day depends
+  on it. Take the break.
+
+`tmux` is what makes any of this safe: walking out of wifi range kills your SSH
+connection, not your session. If you skipped it at login, start it now and re-run your
+agent inside it.
+
+**Done when** you're back, and something finished without you:
+
+```bash
+tmux attach
+```
+
+---
+
+### 2:00–2:40 · PRs, review, guardrails
 
 **Goal.** A green CI that catches a bug you plant on purpose.
 
@@ -272,7 +368,7 @@ gh run list --repo "$(gh api user --jq .login)/ai_agent_workshop" --limit 5
 
 ---
 
-### 2:35–3:20 · Stretch goals
+### 2:40–3:20 · Stretch goals
 
 Self-directed. Pick one, they're independent.
 
@@ -349,14 +445,17 @@ not. Being *quadratic* is the finding. Full brief in
 The golden tests diff bytes against bedtools, so they transfer unchanged. You can't
 read the code, but you can prove it's correct. That's the point.
 
-**Claude Code from your phone.** Demo from the front.
+**Claude Code from your phone.** Covered at the 1:45 break, and demoed from the front.
+If you got `/remote-control` working then, the interesting version of this stretch goal
+is to run the rest of the afternoon from the phone and see which parts of supervision
+survive a 6-inch screen.
 
 ---
 
 ### 3:20–3:30 · Wrap-up
 
-What your afternoon cost: [console.anthropic.com](https://console.anthropic.com) →
-Usage. Worth seeing the number next to what you built.
+What your afternoon cost: [platform.claude.com/usage](https://platform.claude.com/usage),
+and `/usage` in any session still open. Worth seeing the number next to what you built.
 
 ---
 
@@ -369,9 +468,12 @@ Usage. Worth seeing the number next to what you built.
 | **Esc Esc** | Edit your previous message and rerun from there. |
 | **`/model`** | Switch models. Plan on the strong one, execute on the cheap one. |
 | **`/clear`** | Wipe the conversation. Between unrelated tasks, do this. |
+| **`/usage`** | Tokens and dollars for this session, per model. Look after anything that felt expensive. |
+| **`/context`** | What's eating your context window right now. |
 | **`#`** | Prefix a message to save it to `CLAUDE.md` as a standing instruction. |
 | **`/init`** | Generate a `CLAUDE.md` for an existing codebase. |
 | **`claude -p "..."`** | One-shot, non-interactive. Pipes and scripts. |
+| **`/remote-control`** | Hand the session to your phone. Needs a Pro/Max login — see the 1:45 break. |
 
 **`CLAUDE.md`** — yours came from `specs/CLAUDE.md.example` at setup. Anything you'd
 otherwise retype goes in it. Add with `#`, or just edit the file.
@@ -385,6 +487,11 @@ turn caught in three minutes costs a `git checkout`.
 
 **Ask before it writes to the network.** "Show me the commands first" on anything
 touching `gh`, and read the `--repo` in what comes back.
+
+**`/usage` resets on `/clear`.** The session figure is what that conversation cost, not
+what your afternoon cost — the console number at 3:20 is the total. Check `/usage`
+after a long parallel run anyway: three agents on Opus is a different number from one
+on Sonnet, and seeing it once is how the habit of `/model` sticks.
 
 ---
 

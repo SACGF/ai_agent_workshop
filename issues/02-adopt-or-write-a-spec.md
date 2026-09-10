@@ -13,7 +13,7 @@ brainstorm prompts in `prompts.md`.
 
 **Adopt the fallback.** `cp specs/fallback-spec.md SPEC.md`. It's complete and
 opinionated: `sort`, `merge -d`, `intersect -u/-v/-wa`, `subtract`, BED3-BED6, exit
-codes, the lot. Zero shame in this — if you're past 0:45, just take it.
+codes, the lot. Zero shame in this — if you're past 0:50, just take it.
 
 ## Acceptance criteria
 

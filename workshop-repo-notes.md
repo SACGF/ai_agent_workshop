@@ -79,21 +79,33 @@ The single source of truth attendees keep open. Include:
    session per worktree in tmux/screen panes, with the exact commands.
 
 Agenda (3.5 h):
-- 0:00–0:20 — Setup + hello-world task with Claude Code
-- 0:20–0:50 — Brainstorm → spec: agent interviews you, writes SPEC.md, quick
+- 0:00–0:15 — Setup: verify the machine, fork, clone, CLAUDE.md in place
+- 0:15–0:35 — Warm-up: re-file the issues, then "99 Bottles of Beer" in the
+  attendee's own language and again in one they don't read, verified by diffing
+  the two outputs against each other. Plant an off-by-one, watch the diff catch
+  it. This is the golden-test move and the off-by-one teaching point in
+  miniature, before anything real is at stake. Then `mytools --version`.
+- 0:35–0:55 — Brainstorm → spec: agent interviews you, writes SPEC.md, quick
   literature/prior-art web search. Design decisions are yours: which flags,
   streaming vs in-memory, BED-only vs GFF3, exit codes, `-header` handling.
   Stalled? Adopt `specs/fallback-spec.md`.
-- 0:50–1:50 — Spec → issues → code: agent files issues with `gh`; plan with a
+- 0:55–1:45 — Spec → issues → code: agent files issues with `gh`; plan with a
   strong model, execute with a cheaper one; worktrees + tmux for parallel
   subcommands.
-- 1:50–2:35 — PR + human review (pair up, review each other's PRs with
+- 1:45–2:00 — Break. Kick off a long task, connect `/remote-control` to the
+  Claude app, and go outside with it — the lesson is that supervision does not
+  require a keyboard. NOTE: Remote Control requires a Pro/Max/Team/Enterprise
+  login; API keys are not supported, so attendees on the workshop key must
+  `unset ANTHROPIC_API_KEY` and `/login` with their own subscription, or just
+  take the break and watch the demo from the front. Never block the room on it.
+- 2:00–2:40 — PR + human review (pair up, review each other's PRs with
   `gh pr review`) + guardrails: agent adds golden tests vs bedtools, a linter,
   GitHub Actions; then deliberately introduce a bug and watch CI catch it.
-- 2:35–3:20 — Stretch goals (self-directed): gene-lookup REST client;
+- 2:40–3:20 — Stretch goals (self-directed): gene-lookup REST client;
   reimplement a subcommand in a language you don't know; volunteers build the
-  gene API server; Claude Code from your phone (demo from the front).
-- 3:20–3:30 — Wrap-up, show console token usage ("what your afternoon cost").
+  gene API server; running the afternoon from your phone.
+- 3:20–3:30 — Wrap-up, show token usage (`/usage` per session, the console for
+  the day) — "what your afternoon cost".
 
 Note on forks/PRs: attendees review each other on their own forks. Include the
 `gh pr create --repo <their-fork>` incantation so PRs don't accidentally target
