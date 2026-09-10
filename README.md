@@ -1,14 +1,12 @@
 # Agentic Coding for Bioinformaticians
 
-A 3.5-hour hands-on workshop. You will build a small reimplementation of bedtools —
+3.5-hour hands-on workshop. You'll build a small reimplementation of bedtools —
 `mytools`, with subcommands like `sort`, `merge`, `intersect`, `subtract`, `closest` —
 without writing much of it yourself. Real `bedtools` is installed on your VM, so every
 correctness question has an oracle: your output either matches it or it doesn't. That
 frees you to work on the thing this workshop is actually about, which is not BED files.
 It's how to specify, parallelise, review and guard work that an agent does faster than
 you can read it.
-
-You keep everything you build. Fork, work in your fork, and take it home.
 
 ---
 
