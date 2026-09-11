@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-Conventions for the `mytools` project. This is copied to the repo root during setup
-and read automatically at the start of every session — edit it as your design firms up,
-either directly or with the `#` prefix from inside a session.
+Conventions for the `mytools` project. This **overwrites** the `CLAUDE.md` in the repo
+root during setup — the one there is notes for the upstream template, not for your
+project. It is read automatically at the start of every session, so edit it as your
+design firms up, either directly or with the `#` prefix from inside a session.
 
 ## My fork — fill this in first
 
@@ -26,6 +27,15 @@ a success.
 `mytools` is a small reimplementation of a subset of bedtools: `sort`, `merge`,
 `intersect`, `subtract`, `closest`. Real `bedtools` is installed and is the oracle —
 if our output differs from it on the same input, we are wrong.
+
+## Language — fill this in at 0:30
+
+**`mytools` is written in `<language>`.** Every subcommand and every test. Don't
+introduce a second language without asking me.
+
+One codebase, one language: several agents work on this in parallel and they will each
+pick their own otherwise. Reimplementing a single subcommand elsewhere is a deliberate
+stretch goal, not a default.
 
 ## Interval semantics — read this before touching overlap logic
 
@@ -67,5 +77,8 @@ fails, look there first.
 
 - Small commits, one logical change each, message referencing the issue: `sort: handle
   unsorted chrom order (#3)`.
-- Branch per issue: `feat/3-sort`.
+- Branch per issue: `feat/3-sort`. Exception: trivial one-liners go straight to main —
+  ask me which I want rather than defaulting to a PR.
+- Closing an issue means checking the code does what the issue asked, not remembering
+  that you wrote it.
 - PRs go to **your own fork** — see the fork rule at the top of this file.
