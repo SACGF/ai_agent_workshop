@@ -35,8 +35,9 @@ The rule of thumb:
   it.** That single habit is what makes a suite grow in the right direction instead of
   just growing.
 
-Both belong in CI, along with a linter. That is the destination for today: a project
-where `git push` runs your tests and your linter, and tells you if you broke something.
+Both belong in Continuous Integration (CI), along with a linter. That is the
+destination for today: a project where `git push` runs your tests and your linter, and
+tells you if you broke something.
 
 ## The pattern
 

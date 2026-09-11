@@ -3,7 +3,8 @@ against it is worth more than any test you'd write by hand — you never have to
 the right answer, and the tests survive a rewrite in another language.
 
 Read `tests/README.md` first. It explains the pattern and has a worked example for
-exactly one case; your job is to grow it into a suite and wire it to CI.
+exactly one case; your job is to grow it into a suite and wire it to Continuous
+Integration (CI) so it runs on every push.
 
 ## Goal
 

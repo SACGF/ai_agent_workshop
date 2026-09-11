@@ -86,10 +86,12 @@ The single source of truth attendees keep open. Include:
 Agenda (3.5 h):
 - 0:00–0:15 — Setup: verify the machine, fork in the browser, agent clones,
   CLAUDE.md in place
-- 0:15–0:35 — Warm-up: re-file the issues, then "99 Bottles of Beer" in the
+- 0:15–0:35 — Warm-up: re-file the issues, then FizzBuzz 1–100 in the
   attendee's own language and again in one they don't read, verified by diffing
-  the two outputs against each other. Plant an off-by-one, watch the diff catch
-  it. This is the golden-test move and the off-by-one teaching point in
+  the two outputs against each other. (Was "99 Bottles of Beer"; that hit a
+  content filter on a workshop account in the dry run.) Plant an off-by-one at
+  100 — R's `1:100` is inclusive, Python's `range(1, 100)` is not — and watch
+  the diff catch it. This is the golden-test move and the off-by-one teaching point in
   miniature, before anything real is at stake. Then `mytools --version`.
 - 0:35–0:55 — Brainstorm → spec: agent interviews you, writes SPEC.md, quick
   literature/prior-art web search. Design decisions are yours: which flags,
