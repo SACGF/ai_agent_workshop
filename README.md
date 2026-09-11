@@ -68,6 +68,8 @@ Your fork → **Settings** → scroll to **Features** → tick **Issues**.
 
 ### 3 · Log in to `gh`
 
+**NB:** This method gives the agent full access to your GitHub and allows it do any operations that your user can, if you wish to constrain your agent to have fewer permissions jump to [using a PAT](#using-a-pat).
+
 **In the shell:**
 
 ```bash
@@ -89,6 +91,14 @@ so:
 - **On that page, click the one button and do nothing else.** Reloading it, wandering
   off, opening a second copy — any of those invalidate the code, and you start
   `gh auth login` over.
+
+#### Using a PAT
+
+Agents run with autonomy can and sometimes will run commands which you may not have wanted them to. If they have broad permissions this can sometimes be risky. For GitHub you can reduce the risk of an agent running something it shouldn't by using a fine-grained PAT as its method of authentication. 
+
+You can create a new token through the [GitHub Developer Settings](https://github.com/settings/personal-access-tokens/new). I recommend creating a fine-grained token scoped to your fork of this repository, with `Read and write` permissions for at least `contents`, `pull requests`, `issues` and `commit statuses` and scoping it to expire within 7 days.  
+
+You can then copy the token and run `export GH_TOKEN=github_pat_...` instead of `gh auth login`. All future `gh` commands in that session will pick up this token when they need to authenticate.  
 
 ### 4 · Set your git identity, and start Claude Code
 
