@@ -105,25 +105,25 @@ browser — that list is the surface you and every agent share this afternoon.
 Two languages, one diff. Use your language first, then one you don't read:
 
 ```text
-Write `bottles.R` that prints the full lyrics of "99 Bottles of Beer" to stdout. Get the
-bottom of the song right: "1 bottle" is singular, and zero is "no more bottles". Then
-show me the last eight lines of its output.
+Write `fizzbuzz.R` that prints the numbers 1 to 100 inclusive, one per line, replacing
+multiples of 3 with "Fizz", multiples of 5 with "Buzz", and multiples of both with
+"FizzBuzz". Then show me the last eight lines of its output.
 ```
 
-Look at the code (`!cat bottles.R`), and if it's unfamiliar, ask for it in a language
-you do know:
+Look at the code (`!cat fizzbuzz.R`) — the last line must be `Buzz` — and if it's
+unfamiliar, ask for it in a language you do know:
 
 ```text
-Walk me through bottles.R as if I'm a Python programmer.
+Walk me through fizzbuzz.R as if I'm a Python programmer.
 ```
 
 ```text
-Now write `bottles.py` — same output, and don't look at the R version while you do it.
+Now write `fizzbuzz.py` — same output, and don't look at the R version while you do it.
 Then diff the two outputs and tell me whether they are byte-identical.
 ```
 
 ```text
-Introduce a single off-by-one into the Python version, show me the diff, then put it
+Make the Python version stop at 99 instead of 100, show me the diff, then put it
 back.
 ```
 
@@ -293,6 +293,10 @@ SPEC.md, including reading from stdin. Add a linter. Then update
 `.github/workflows/ci.yml` to run both on every push and PR.
 ```
 
+That last step is Continuous Integration (CI): GitHub running your tests and linter on
+every push. `ci.yml` currently just echoes "no tests yet", so until this lands, a green
+tick means nothing.
+
 Golden tests alone aren't the goal — ask for the other half:
 
 ```text
@@ -313,7 +317,7 @@ code: **Actions are disabled by default on a fork**, and pushing
 in the README's [If GitHub gives you
 trouble](README.md#if-github-gives-you-trouble).
 
-Then break it on purpose:
+Then break it on purpose — only once CI is green on a real push:
 
 ```text
 Introduce a subtle off-by-one bug in the interval overlap logic on a new branch — the

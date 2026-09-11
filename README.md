@@ -274,30 +274,29 @@ issue list is the shared surface between you and every agent you run this aftern
 and you want to see what's actually on it. No Issues tab? You skipped step 2 of setup —
 your fork → Settings → Features → tick Issues, then re-run the prompt.
 
-Now the warm-up proper. *99 Bottles of Beer*, in the language you reach for without
-thinking:
+Now the warm-up proper. FizzBuzz, in the language you reach for without thinking:
 
 **In Claude Code:**
 
 ```text
-Write `bottles.R` that prints the full lyrics of "99 Bottles of Beer" to stdout. Get the
-bottom of the song right: "1 bottle" is singular, and zero is "no more bottles". Then
-show me the last eight lines of its output.
+Write `fizzbuzz.R` that prints the numbers 1 to 100 inclusive, one per line, replacing
+multiples of 3 with "Fizz", multiples of 5 with "Buzz", and multiples of both with
+"FizzBuzz". Then show me the last eight lines of its output.
 ```
 
-Look at what it actually wrote — `!cat bottles.R` — and read those eight lines
-yourself, because the bottom of that song is nothing but edge cases: a plural that stops
-being plural, and a count that ends in a word instead of a number. That is the same
-shape as the bug you are going to spend all afternoon not writing: **BED intervals are
-0-based half-open**, and most wrong answers in this workshop are an off-by-one at a
-boundary.
+Look at what it actually wrote — `!cat fizzbuzz.R` — and read those eight lines
+yourself. The last one must be `Buzz`: 100 is the boundary, and it is the line a
+half-open range quietly drops. R's `1:100` is inclusive; Python's `range(1, 100)` stops
+at 99. That is the same shape as the bug you are going to spend all afternoon not
+writing: **BED intervals are 0-based half-open**, and most wrong answers in this
+workshop are an off-by-one at a boundary.
 
 If the code is in a language you don't read, don't skip it — reframe it:
 
 **In Claude Code:**
 
 ```text
-Walk me through bottles.R as if I'm a Python programmer.
+Walk me through fizzbuzz.R as if I'm a Python programmer.
 ```
 
 "Explain this in terms of a language I do know" is the most underused prompt in the
@@ -308,14 +307,14 @@ Then the same program again, in a language you don't use:
 **In Claude Code:**
 
 ```text
-Now write `bottles.py` — same output, and don't look at the R version while you do it.
+Now write `fizzbuzz.py` — same output, and don't look at the R version while you do it.
 Then diff the two outputs and tell me whether they are byte-identical.
 ```
 
 **In the shell:**
 
 ```bash
-diff <(Rscript bottles.R) <(python3 bottles.py) && echo identical
+diff <(Rscript fizzbuzz.R) <(python3 fizzbuzz.py) && echo identical
 ```
 
 **That diff is the whole workshop in one command.** You can't review the second
@@ -324,17 +323,17 @@ you can. Every correctness claim today has this shape: `mytools` against `bedtoo
 byte for byte. The only thing that changes after the warm-up is that the reference
 implementation is someone else's and the edge cases are intervals.
 
-Thirty seconds more, and worth it:
+One more:
 
 **In Claude Code:**
 
 ```text
-Introduce a single off-by-one into the Python version, show me the diff, then put it
+Make the Python version stop at 99 instead of 100, show me the diff, then put it
 back.
 ```
 
-Notice how precisely the diff says *that* something is wrong, and how little it says
-about *where*. That's the 2:00 guardrails exercise in miniature, before you've written
+One missing line, and the diff catches it. Notice that the diff says *that* something is
+wrong, not *why* — the reason lives in a `range()` call it never saw. That's the 2:00 guardrails exercise in miniature, before you've written
 anything real.
 
 ---
@@ -373,7 +372,8 @@ Make `mytools --version` print a version and exit 0. One file, no subcommands ye
 as soon as that works.
 ```
 
-Then close the loop on it — the habit the rest of the day runs on:
+Then close the issue — the habit the rest of the day runs on: check it's really done,
+commit referencing it, close it.
 
 **In Claude Code:**
 
@@ -393,7 +393,7 @@ issue."* Agents follow an explicit instruction far better than they guess your t
 
 ```bash
 gh issue list --repo "$(gh api user --jq .login)/ai_agent_workshop"
-diff <(Rscript bottles.R) <(python3 bottles.py) && echo identical
+diff <(Rscript fizzbuzz.R) <(python3 fizzbuzz.py) && echo identical
 mytools --version
 ```
 
@@ -570,7 +570,8 @@ tmux attach
 
 ### 2:00–2:40 · PRs, review, guardrails
 
-**Goal.** A green CI that catches a bug you plant on purpose.
+**Goal.** Continuous Integration (CI) on your fork — tests and a linter that run
+automatically on every push — and proof that it catches a bug you plant on purpose.
 
 Open PRs on your own fork:
 
@@ -601,16 +602,27 @@ running automatically on every push:
 2. **Unit tests** — one per edge case you had to think about, running without bedtools.
 3. **A linter** — with its config committed.
 
-`.github/workflows/ci.yml` currently just echoes "no tests yet". Replacing that with
-all three is the exercise. `tests/README.md` explains why you want both kinds of test
-and not just the golden ones.
+None of this exists yet. `.github/workflows/ci.yml` currently just echoes "no tests
+yet" and exits 0, so CI is "green" on your fork today without checking anything.
+Building all three is the exercise: the prompts are in
+[`prompts.md` → 2:00 — Guardrails](prompts.md#200--guardrails), and `tests/README.md`
+explains why you want both kinds of test and not just the golden ones.
+
+Build it, push it, and watch the Actions run until it's green:
+
+**In the shell:**
+
+```bash
+gh run watch --repo "$(gh api user --jq .login)/ai_agent_workshop"
+```
 
 Two things bite everyone in this block, and both are GitHub permissions rather than
 code: **Actions are disabled on new forks**, and pushing to `.github/workflows/` needs a
 scope `gh auth login` didn't ask for. Fixes for both are in
 [If GitHub gives you trouble](#if-github-gives-you-trouble).
 
-**Then break it on purpose:**
+**Then break it on purpose.** Only once CI is green on a real push — a planted bug
+proves nothing against a workflow that runs no tests:
 
 **In Claude Code:**
 
@@ -746,7 +758,7 @@ watch if you did this every day.
 | **Shift+Tab** | Plan mode. It thinks and proposes, changes nothing. Use it for anything non-trivial. |
 | **Esc** | Interrupt. Not a crash — it stops and waits. Use it early, the moment it's off track. |
 | **Esc Esc** | Edit your previous message and rerun from there. |
-| **`!cmd`** | Run a shell command without leaving the session — `!ls`, `!git status`, `!cat bottles.R`. |
+| **`!cmd`** | Run a shell command without leaving the session — `!ls`, `!git status`, `!cat fizzbuzz.R`. |
 | **`/model`** | Switch models. Plan and argue on Fable, build on Opus, skip Sonnet. |
 | **`/clear`** | Wipe the conversation. Between unrelated tasks, do this. |
 | **`/usage`** | Tokens and dollars for this session, per model. Look after anything that felt expensive. |
@@ -824,11 +836,10 @@ tmux send-keys -t ws.2 claude Enter
 
 </details>
 
-The repo is 9MB, so this costs milliseconds. Each copy is an ordinary repo with `origin`
-already pointing at your fork, so `gh pr create` works in every pane exactly as it did
-in the first one. There is nothing new to learn here, which is
-the point — `git worktree` does the same job more elegantly and is worth your time
-*after* today, but not during it.
+Each copy is an ordinary repo with `origin` already pointing at your fork, so
+`gh pr create` works in every pane exactly as it did in the first one. There is nothing
+new to learn here, which is the point — `git worktree` does the same job more elegantly
+and is worth your time *after* today, but not during it.
 
 Then attach, because this part is yours — the panes are your supervision surface and
 nothing can sit in them for you:
@@ -917,11 +928,10 @@ it's there to prevent.
 ## Taking it home
 
 Today's VM is disposable, which is the only reason we've been this relaxed. It
-holds nothing but a fork you can re-clone, and it gets deleted at 3:20. Your own
-machine is not like that: the agent runs with your SSH keys, your cloud
-credentials, your access to whatever is in `~/.ssh` and `~/.aws`. The code is in
-git and safe. The credentials sitting next to it are the thing worth thinking
-about.
+holds nothing but a fork you can re-clone, and it gets deleted at the end of the
+workshop. Your own machine is not like that: the agent runs with your SSH keys, your
+cloud credentials, your access to whatever is in `~/.ssh` and `~/.aws`. The code is in
+git and safe. The credentials sitting next to it are the thing worth thinking about.
 
 The cheapest containment that actually works is a **separate user account**:
 

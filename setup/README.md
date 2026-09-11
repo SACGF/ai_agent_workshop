@@ -396,7 +396,7 @@ more cheaply here by spare VMs and a snapshot.
 
 **Passwordless sudo stays.** An attendee's agent will want to install something
 you did not predict, and blocking that mid-exercise is worse than the risk on a
-machine being deleted at 3:20.
+machine being deleted at the end of the workshop.
 
 **`workshop-doctor` is not in the MOTD.** Checking the machine is the attendees'
 first exercise (README, *Setup*) — the point is having the agent do it. The
