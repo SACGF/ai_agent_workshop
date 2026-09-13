@@ -1,5 +1,7 @@
 # Agentic Coding for Bioinformaticians
 
+[Slides on Google Docs](https://docs.google.com/presentation/d/1NK8sK9PG731B0aR1ucMVaWabn17Hb3zBYT6-771zHiU/edit?usp=sharing)
+
 3.5-hour hands-on workshop. You'll build a small reimplementation of bedtools —
 `mytools`, with subcommands like `sort`, `merge`, `intersect`, `subtract`, `closest` —
 without writing much of it yourself. Real `bedtools` is installed on your VM, so every
